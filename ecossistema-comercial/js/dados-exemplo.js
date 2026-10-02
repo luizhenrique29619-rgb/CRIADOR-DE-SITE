@@ -47,16 +47,16 @@ window.DADOS = {
     { id: 7, numero: 'PROP-2026-035', cliente: 'Auto Peças Veloz',        valor: 32000,  status: 'Recusada',      vendedor: 'Diego Rocha',  data: '2026-09-10', validade: '2026-10-10' },
   ],
 
-  /* ---- Catálogo de produtos de mídia ---- */
+  /* ---- Catálogo de empreendimentos / unidades à venda ---- */
   produtos: [
-    { id: 1, nome: 'Spot 30" — Jornal da Record', tipo: 'Spot',          faixa: 'Prime time',  preco: 4500, descricao: 'Inserção de 30 segundos no principal telejornal da casa.' },
-    { id: 2, nome: 'Spot 15" — Programação diurna',tipo: 'Spot',          faixa: 'Diurno',      preco: 1800, descricao: 'Inserção de 15 segundos na faixa da tarde.' },
-    { id: 3, nome: 'Patrocínio — Quadro Esportivo',tipo: 'Patrocínio',    faixa: 'Prime time',  preco: 22000,descricao: 'Patrocínio mensal com citação e vinheta de abertura.' },
-    { id: 4, nome: 'Merchandising ao vivo',        tipo: 'Merchandising', faixa: 'Variável',    preco: 8500, descricao: 'Ação ao vivo de até 2 minutos dentro do programa.' },
-    { id: 5, nome: 'Pacote Prime Time (mensal)',   tipo: 'Pacote',        faixa: 'Prime time',  preco: 60000,descricao: '20 inserções/mês na faixa nobre, com desconto de volume.' },
-    { id: 6, nome: 'Testeira / Selo de patrocínio',tipo: 'Patrocínio',    faixa: 'Variável',    preco: 12000,descricao: 'Selo de patrocinador exibido durante o bloco.' },
-    { id: 7, nome: 'Pacote Digital + TV',          tipo: 'Pacote',        faixa: 'Multiplataforma', preco: 35000, descricao: 'Combinação de inserções na TV com mídia no portal e redes.' },
-    { id: 8, nome: 'Ação especial de datas',       tipo: 'Projeto',       faixa: 'Sazonal',     preco: 45000,descricao: 'Projeto comercial para datas comemorativas (Natal, Dia das Mães).' },
+    { id: 1, nome: 'Residencial Jardim das Acácias — Apto 2 quartos', tipo: 'Apartamento',    faixa: 'Bairro Farol',    preco: 320000,  descricao: 'Apartamento de 2 quartos, 58 m², com varanda e 1 vaga.' },
+    { id: 2, nome: 'Residencial Jardim das Acácias — Apto 3 quartos', tipo: 'Apartamento',    faixa: 'Bairro Farol',    preco: 420000,  descricao: 'Apartamento de 3 quartos (1 suíte), 74 m², 2 vagas.' },
+    { id: 3, nome: 'Condomínio Vista Mar — Cobertura',               tipo: 'Cobertura',      faixa: 'Orla / Pajuçara', preco: 890000,  descricao: 'Cobertura duplex, 160 m², 3 suítes, vista para o mar.' },
+    { id: 4, nome: 'Edifício Horizonte — Sala comercial',            tipo: 'Sala comercial', faixa: 'Centro',          preco: 180000,  descricao: 'Sala comercial de 32 m², ideal para escritório ou clínica.' },
+    { id: 5, nome: 'Loteamento Bosque Verde — Lote 300 m²',          tipo: 'Lote',           faixa: 'Zona de expansão',preco: 150000,  descricao: 'Lote plano de 300 m² em condomínio fechado com portaria.' },
+    { id: 6, nome: 'Condomínio Portal — Casa 4 suítes',              tipo: 'Casa',           faixa: 'Condomínio fechado', preco: 1200000, descricao: 'Casa de alto padrão, 320 m², 4 suítes, piscina e lazer.' },
+    { id: 7, nome: 'Residencial Primavera — Apto 2 quartos (MCMV)',  tipo: 'Apartamento',    faixa: 'Programa habitacional', preco: 210000, descricao: 'Apartamento 2 quartos, 48 m², elegível ao Minha Casa Minha Vida.' },
+    { id: 8, nome: 'Edifício Platinum — Apartamento Garden',         tipo: 'Apartamento',    faixa: 'Jatiúca',         preco: 650000,  descricao: 'Garden de 110 m² com quintal privativo, 3 suítes, 2 vagas.' },
   ],
 
   /* ---- Equipe de vendas (metas) ---- */
@@ -93,12 +93,13 @@ window.DADOS = {
     { mes: 'Out', valor: 810000 },
   ],
 
-  /* ---- Indicadores de mercado (inteligência) ---- */
+  /* ---- Indicadores de mercado (inteligência — construção civil) ---- */
   indicadores: [
-    { nome: 'IPCA (mês)',            valor: '0,44%',    variacao: 'alta',  obs: 'Inflação acima do mês anterior.' },
-    { nome: 'IPCA (12 meses)',       valor: '4,2%',     variacao: 'estavel',obs: 'Dentro da meta do Banco Central.' },
-    { nome: 'PIB Nordeste (ano)',    valor: '+2,8%',    variacao: 'alta',  obs: 'Crescimento acima da média nacional.' },
-    { nome: 'Confiança do consumidor',valor: '98,5 pts', variacao: 'alta',  obs: 'Tendência de recuperação do varejo.' },
-    { nome: 'Investimento pub. TV',  valor: '+6,1%',    variacao: 'alta',  obs: 'Mídia televisiva segue em alta na região.' },
+    { nome: 'IPCA (12 meses)',        valor: '4,2%',     variacao: 'estavel', obs: 'Inflação dentro da meta do Banco Central.' },
+    { nome: 'INCC-DI (custo de obra)', valor: '+0,62%',  variacao: 'alta',    obs: 'Custo da construção subiu no mês — atenção à margem.' },
+    { nome: 'SELIC (financiamento)',  valor: '10,5%',    variacao: 'baixa',   obs: 'Queda favorece crédito imobiliário e vendas.' },
+    { nome: 'PIB Nordeste (ano)',     valor: '+2,8%',    variacao: 'alta',    obs: 'Crescimento acima da média nacional.' },
+    { nome: 'Confiança do consumidor', valor: '98,5 pts', variacao: 'alta',   obs: 'Ambiente favorável à decisão de compra do imóvel.' },
+    { nome: 'Crédito imobiliário',    valor: '+7,3%',    variacao: 'alta',    obs: 'Financiamentos habitacionais em expansão na região.' },
   ],
 };

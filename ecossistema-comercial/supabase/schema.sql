@@ -56,7 +56,7 @@ create table if not exists public.propostas (
 create table if not exists public.produtos (
   id        bigint generated always as identity primary key,
   nome      text not null,
-  tipo      text,          -- Spot | Patrocínio | Merchandising | Pacote | Projeto
+  tipo      text,          -- Apartamento | Cobertura | Casa | Lote | Sala comercial
   faixa     text,          -- faixa de programação
   preco     numeric default 0,
   descricao text,

@@ -16,7 +16,7 @@ estratégia de vendas**. Reúne, em um portal só, os módulos do dia a dia come
 | 👥 **Clientes & Leads (CRM)** | Cadastro, busca e status das contas |
 | 🫧 **Funil de Vendas** | Pipeline kanban por estágio |
 | 📄 **Propostas** | Criação e acompanhamento de propostas |
-| 📺 **Catálogo** | Produtos e pacotes de mídia da casa |
+| 🏢 **Catálogo de Imóveis** | Empreendimentos e unidades à venda |
 | 🧭 **Inteligência de Mercado** | Indicadores econômicos e cenário |
 | 🏆 **Equipe & Metas** | Ranking e metas dos vendedores |
 | 📅 **Agenda** | Compromissos e prazos |

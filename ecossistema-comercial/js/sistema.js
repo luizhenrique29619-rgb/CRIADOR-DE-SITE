@@ -14,7 +14,7 @@ const MODULOS = [
   { id: 'crm',          nome: 'Clientes & Leads',     icone: '👥', href: 'modulos/crm.html',          grupo: 'Operação' },
   { id: 'funil',        nome: 'Funil de Vendas',      icone: '🫧', href: 'modulos/funil.html',        grupo: 'Operação' },
   { id: 'propostas',    nome: 'Propostas',            icone: '📄', href: 'modulos/propostas.html',    grupo: 'Operação' },
-  { id: 'catalogo',     nome: 'Catálogo',             icone: '📺', href: 'modulos/catalogo.html',     grupo: 'Apoio & Inteligência' },
+  { id: 'catalogo',     nome: 'Catálogo de Imóveis',  icone: '🏢', href: 'modulos/catalogo.html',     grupo: 'Apoio & Inteligência' },
   { id: 'inteligencia', nome: 'Inteligência',         icone: '🧭', href: 'modulos/inteligencia.html', grupo: 'Apoio & Inteligência' },
   { id: 'equipe',       nome: 'Equipe & Metas',       icone: '🏆', href: 'modulos/equipe.html',       grupo: 'Apoio & Inteligência' },
   { id: 'agenda',       nome: 'Agenda',               icone: '📅', href: 'modulos/agenda.html',       grupo: 'Apoio & Inteligência' },

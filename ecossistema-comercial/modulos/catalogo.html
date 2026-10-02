@@ -16,10 +16,10 @@
         <div class="grade grade--kpi" id="kpis"></div>
 
         <div class="ferramentas mt-20">
-          <div class="busca"><input type="text" id="busca" placeholder="Buscar produto de mídia..." /></div>
+          <div class="busca"><input type="text" id="busca" placeholder="Buscar empreendimento ou unidade..." /></div>
           <select id="filtroTipo" class="campo" style="margin:0;width:auto;">
             <option value="">Todos os tipos</option>
-            <option>Spot</option><option>Patrocínio</option><option>Merchandising</option><option>Pacote</option><option>Projeto</option>
+            <option>Apartamento</option><option>Cobertura</option><option>Casa</option><option>Lote</option><option>Sala comercial</option>
           </select>
         </div>
 
@@ -34,8 +34,8 @@
   <script src="../js/dados-exemplo.js"></script>
   <script src="../js/sistema.js"></script>
   <script>
-    montarLayout({ ativo: 'catalogo', titulo: 'Catálogo Comercial', sub: 'Produtos e pacotes de mídia' });
-    const iconeTipo = { 'Spot':'🎬','Patrocínio':'⭐','Merchandising':'🛍️','Pacote':'📦','Projeto':'🎯' };
+    montarLayout({ ativo: 'catalogo', titulo: 'Catálogo de Imóveis', sub: 'Empreendimentos e unidades à venda' });
+    const iconeTipo = { 'Apartamento':'🏢','Cobertura':'🏙️','Casa':'🏠','Lote':'🌳','Sala comercial':'🏬' };
     let TODOS = [];
 
     async function iniciar() {
@@ -45,10 +45,10 @@
       const medio = precos.length ? precos.reduce((a,b)=>a+b,0)/precos.length : 0;
       const tipos = new Set(TODOS.map(p=>p.tipo)).size;
       document.getElementById('kpis').innerHTML = [
-        { i:'📺', r:'Produtos no catálogo', v: TODOS.length },
-        { i:'🏷️', r:'Tipos de mídia', v: tipos },
-        { i:'💵', r:'Ticket médio', v: moedaCurta(medio) },
-        { i:'⬆️', r:'Maior pacote', v: moedaCurta(Math.max(...precos,0)) },
+        { i:'🏢', r:'Unidades no catálogo', v: TODOS.length },
+        { i:'🏷️', r:'Tipos de imóvel', v: tipos },
+        { i:'💵', r:'Preço médio', v: moedaCurta(medio) },
+        { i:'⬆️', r:'Maior valor', v: moedaCurta(Math.max(...precos,0)) },
       ].map(k=>`<div class="kpi"><div class="kpi__rotulo"><span class="kpi__icone">${k.i}</span> ${k.r}</div><div class="kpi__valor">${k.v}</div></div>`).join('');
       render();
     }
@@ -60,7 +60,7 @@
       g.innerHTML = fil.length ? fil.map(p=>`
         <div class="cartao"><div class="cartao__corpo">
           <div class="flex-entre" style="margin-bottom:10px;">
-            <span class="card-modulo__icone" style="width:42px;height:42px;font-size:1.25rem;margin:0;">${iconeTipo[p.tipo]||'📺'}</span>
+            <span class="card-modulo__icone" style="width:42px;height:42px;font-size:1.25rem;margin:0;">${iconeTipo[p.tipo]||'🏢'}</span>
             <span class="badge badge--azul">${esc(p.tipo||'')}</span>
           </div>
           <h3 style="font-size:1rem;">${esc(p.nome)}</h3>
