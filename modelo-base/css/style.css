@@ -1,0 +1,183 @@
+/* =========================================================
+   MODELO BASE — folha de estilo
+   As cores ficam logo abaixo em :root. Mude ali e o site
+   inteiro muda de cor.
+   ========================================================= */
+
+:root {
+  --cor-principal: #1f6feb;   /* cor dos botões e destaques */
+  --cor-escura:    #0d1b2a;   /* textos e cabeçalho        */
+  --cor-texto:     #333333;   /* texto normal              */
+  --cor-cinza:     #f5f7fa;   /* fundo de seções claras    */
+  --cor-branca:    #ffffff;
+  --largura-max:   1100px;    /* largura máxima do conteúdo */
+}
+
+/* ----- Reset básico ----- */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--cor-texto);
+  line-height: 1.6;
+  background: var(--cor-branca);
+}
+
+img { max-width: 100%; display: block; }
+
+a { color: inherit; text-decoration: none; }
+
+/* ----- Container centralizado ----- */
+.container {
+  width: 100%;
+  max-width: var(--largura-max);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ----- Botão ----- */
+.botao {
+  display: inline-block;
+  background: var(--cor-principal);
+  color: #fff;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .2s;
+}
+.botao:hover { opacity: .9; }
+
+/* ===================== CABEÇALHO ===================== */
+.cabecalho {
+  background: var(--cor-escura);
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.cabecalho__interno {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+.logo { font-size: 1.4rem; font-weight: 700; color: #fff; }
+
+.menu { display: flex; gap: 28px; align-items: center; }
+.menu a { color: #fff; font-weight: 500; }
+.menu a:hover { color: var(--cor-principal); }
+.menu__cta {
+  background: var(--cor-principal);
+  padding: 8px 18px;
+  border-radius: 6px;
+}
+.menu__cta:hover { color: #fff; opacity: .9; }
+
+.menu-botao {
+  display: none;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.6rem;
+  cursor: pointer;
+}
+
+/* ===================== HERO ===================== */
+.hero {
+  background: linear-gradient(135deg, var(--cor-escura), var(--cor-principal));
+  color: #fff;
+  text-align: center;
+  padding: 90px 0;
+}
+.hero h1 { font-size: 2.4rem; margin-bottom: 16px; }
+.hero p  { font-size: 1.15rem; margin-bottom: 28px; opacity: .95; }
+
+/* ===================== SEÇÕES ===================== */
+.secao { padding: 70px 0; }
+.secao--cinza { background: var(--cor-cinza); }
+.secao h2 {
+  font-size: 1.9rem;
+  color: var(--cor-escura);
+  margin-bottom: 24px;
+  text-align: center;
+}
+.secao p { max-width: 700px; margin: 0 auto; text-align: center; }
+
+/* ----- Cards ----- */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin-top: 36px;
+}
+.card {
+  background: var(--cor-branca);
+  border: 1px solid #e6e9ee;
+  border-radius: 12px;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.card h3 { color: var(--cor-principal); margin-bottom: 10px; }
+
+/* ===================== FORMULÁRIO ===================== */
+.formulario {
+  max-width: 500px;
+  margin: 30px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.formulario input,
+.formulario textarea {
+  padding: 13px;
+  border: 1px solid #ccd2da;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+.formulario input:focus,
+.formulario textarea:focus {
+  outline: 2px solid var(--cor-principal);
+  border-color: transparent;
+}
+.formulario__aviso {
+  text-align: center;
+  color: #1a7f37;
+  font-weight: 600;
+}
+
+/* ===================== RODAPÉ ===================== */
+.rodape {
+  background: var(--cor-escura);
+  color: #cbd5e1;
+  text-align: center;
+  padding: 28px 0;
+  font-size: .9rem;
+}
+
+/* ===================== CELULAR ===================== */
+@media (max-width: 760px) {
+  .hero h1 { font-size: 1.8rem; }
+
+  .menu-botao { display: block; }
+
+  .menu {
+    display: none;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    gap: 0;
+    background: var(--cor-escura);
+    padding: 10px 0;
+  }
+  .menu.ativo { display: flex; }
+  .menu a { padding: 12px 20px; width: 100%; }
+}

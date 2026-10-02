@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ===== SEO: edite para cada site ===== -->
+  <title>Nome do Site</title>
+  <meta name="description" content="Descrição curta do site (aparece no Google e no WhatsApp)." />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+
+  <!-- ===================== CABEÇALHO ===================== -->
+  <header class="cabecalho">
+    <div class="container cabecalho__interno">
+      <a href="#" class="logo">SeuLogo</a>
+
+      <nav class="menu" id="menu">
+        <a href="#sobre">Sobre</a>
+        <a href="#servicos">Serviços</a>
+        <a href="#contato" class="menu__cta">Contato</a>
+      </nav>
+
+      <!-- botão que abre o menu no celular -->
+      <button class="menu-botao" id="menuBotao" aria-label="Abrir menu">☰</button>
+    </div>
+  </header>
+
+  <!-- ===================== DESTAQUE (HERO) ===================== -->
+  <section class="hero">
+    <div class="container">
+      <h1>Título principal que chama a atenção</h1>
+      <p>Uma frase explicando o que você oferece e por que vale a pena.</p>
+      <a href="#contato" class="botao">Chamar no WhatsApp</a>
+    </div>
+  </section>
+
+  <!-- ===================== SOBRE ===================== -->
+  <section id="sobre" class="secao">
+    <div class="container">
+      <h2>Sobre</h2>
+      <p>Explique aqui quem você é e o que resolve. Mantenha simples e direto.</p>
+    </div>
+  </section>
+
+  <!-- ===================== SERVIÇOS / BENEFÍCIOS ===================== -->
+  <section id="servicos" class="secao secao--cinza">
+    <div class="container">
+      <h2>Serviços</h2>
+      <div class="cards">
+        <div class="card">
+          <h3>Serviço 1</h3>
+          <p>Descrição breve do que está incluso.</p>
+        </div>
+        <div class="card">
+          <h3>Serviço 2</h3>
+          <p>Descrição breve do que está incluso.</p>
+        </div>
+        <div class="card">
+          <h3>Serviço 3</h3>
+          <p>Descrição breve do que está incluso.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CONTATO ===================== -->
+  <section id="contato" class="secao">
+    <div class="container">
+      <h2>Fale com a gente</h2>
+      <form class="formulario" id="formContato">
+        <input type="text" name="nome" placeholder="Seu nome" required />
+        <input type="email" name="email" placeholder="Seu e-mail" required />
+        <textarea name="mensagem" placeholder="Sua mensagem" rows="4" required></textarea>
+        <button type="submit" class="botao">Enviar</button>
+        <p class="formulario__aviso" id="formAviso" hidden>Mensagem enviada! ✅</p>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===================== RODAPÉ ===================== -->
+  <footer class="rodape">
+    <div class="container">
+      <p>&copy; <span id="ano"></span> Nome do Site. Todos os direitos reservados.</p>
+    </div>
+  </footer>
+
+  <!-- Back End (Supabase): biblioteca + configuração + lógica do site -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>
