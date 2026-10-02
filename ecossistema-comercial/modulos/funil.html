@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Funil de Vendas · Comercial Record</title>
+  <link rel="stylesheet" href="../css/sistema.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="overlay" id="overlay"></div>
+
+    <div class="principal">
+      <header class="topo" id="topo"></header>
+
+      <main class="conteudo" id="conteudo">
+        <div class="grade grade--kpi" id="kpis"></div>
+
+        <div class="secao-titulo mt-20">
+          <h2>Pipeline por estágio</h2>
+          <span class="secao-titulo__sub">Oportunidades em andamento</span>
+        </div>
+
+        <div class="kanban" id="kanban"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/dados-exemplo.js"></script>
+  <script src="../js/sistema.js"></script>
+  <script>
+    montarLayout({ ativo: 'funil', titulo: 'Funil de Vendas', sub: 'Oportunidades por estágio' });
+
+    const ESTAGIOS = ['Prospecção','Qualificação','Proposta','Negociação','Fechado'];
+
+    async function montar() {
+      const { dados, fonte } = await carregarDados('oportunidades', DADOS.oportunidades);
+      avisoFonte(fonte, 'conteudo');
+
+      const abertas = dados.filter(o=>!['Fechado','Perdido'].includes(o.estagio));
+      const valorAberto = abertas.reduce((s,o)=>s+Number(o.valor||0),0);
+      const ponderado = abertas.reduce((s,o)=>s+Number(o.valor||0)*Number(o.probabilidade||0)/100,0);
+      const fechado = dados.filter(o=>o.estagio==='Fechado').reduce((s,o)=>s+Number(o.valor||0),0);
+
+      document.getElementById('kpis').innerHTML = [
+        { i:'🫧', r:'Valor em aberto', v: moedaCurta(valorAberto), d:`${abertas.length} oportunidades` },
+        { i:'📈', r:'Previsão ponderada', v: moedaCurta(ponderado), d:'por probabilidade' },
+        { i:'🏁', r:'Fechado no período', v: moedaCurta(fechado), d:`${dados.filter(o=>o.estagio==='Fechado').length} negócios` },
+        { i:'🎯', r:'Ticket médio', v: moedaCurta(dados.length ? dados.reduce((s,o)=>s+Number(o.valor||0),0)/dados.length : 0), d:'por oportunidade' },
+      ].map(k=>`<div class="kpi"><div class="kpi__rotulo"><span class="kpi__icone">${k.i}</span> ${k.r}</div><div class="kpi__valor">${k.v}</div><div class="kpi__delta kpi__delta--sobe">• ${k.d}</div></div>`).join('');
+
+      document.getElementById('kanban').innerHTML = ESTAGIOS.map(est=>{
+        const its = dados.filter(o=>o.estagio===est);
+        const total = its.reduce((s,o)=>s+Number(o.valor||0),0);
+        const cards = its.length ? its.map(o=>`
+          <div class="card-oport">
+            <div class="card-oport__cliente">${esc(o.cliente)}</div>
+            <div class="card-oport__valor">${moeda(o.valor)}</div>
+            <div class="card-oport__meta">
+              <span>${esc(o.vendedor||'—')}</span>
+              <span class="badge badge--azul">${o.probabilidade||0}%</span>
+            </div>
+            <div class="texto-2" style="font-size:.74rem;margin-top:7px;">📅 ${dataBR(o.fechamento)}</div>
+          </div>`).join('') : `<div class="texto-2" style="font-size:.82rem;text-align:center;padding:14px 0;">Sem oportunidades</div>`;
+        return `<div class="coluna">
+          <div class="coluna__topo">
+            <div class="coluna__nome">${esc(est)} <span class="badge badge--neutro">${its.length}</span></div>
+            <div class="coluna__valor">${moedaCurta(total)}</div>
+          </div>
+          <div class="coluna__corpo">${cards}</div>
+        </div>`;
+      }).join('');
+    }
+    montar();
+  </script>
+</body>
+</html>

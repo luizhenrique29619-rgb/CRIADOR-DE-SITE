@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Equipe & Metas · Comercial Record</title>
+  <link rel="stylesheet" href="../css/sistema.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="overlay" id="overlay"></div>
+    <div class="principal">
+      <header class="topo" id="topo"></header>
+      <main class="conteudo" id="conteudo">
+        <div class="grade grade--kpi" id="kpis"></div>
+
+        <div class="secao-titulo mt-20"><h2>Ranking da equipe</h2><span class="secao-titulo__sub">Ordenado por realizado</span></div>
+        <div class="cartao">
+          <div class="tabela-wrap">
+            <table class="tabela">
+              <thead><tr><th>#</th><th>Vendedor</th><th class="num">Meta</th><th class="num">Realizado</th><th style="min-width:160px;">Atingimento</th><th class="num">Negócios</th></tr></thead>
+              <tbody id="tabela"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/dados-exemplo.js"></script>
+  <script src="../js/sistema.js"></script>
+  <script>
+    montarLayout({ ativo: 'equipe', titulo: 'Equipe & Metas', sub: 'Desempenho dos vendedores' });
+    async function montar() {
+      const { dados, fonte } = await carregarDados('vendedores', DADOS.vendedores);
+      avisoFonte(fonte,'conteudo');
+      const ranked = [...dados].sort((a,b)=>Number(b.realizado||0)-Number(a.realizado||0));
+      const realizado = dados.reduce((s,v)=>s+Number(v.realizado||0),0);
+      const meta = dados.reduce((s,v)=>s+Number(v.meta||0),0);
+      const ating = meta ? Math.round(realizado/meta*100) : 0;
+      const negocios = dados.reduce((s,v)=>s+Number(v.negocios||0),0);
+
+      document.getElementById('kpis').innerHTML = [
+        { i:'👤', r:'Vendedores', v: dados.length },
+        { i:'💰', r:'Realizado total', v: moedaCurta(realizado) },
+        { i:'🎯', r:'Atingimento', v: ating+'%', up: ating>=80 },
+        { i:'🤝', r:'Negócios fechados', v: negocios },
+      ].map(k=>`<div class="kpi"><div class="kpi__rotulo"><span class="kpi__icone">${k.i}</span> ${k.r}</div><div class="kpi__valor">${k.v}</div>${k.up!==undefined?`<div class="kpi__delta ${k.up?'kpi__delta--sobe':'kpi__delta--desce'}">${k.up?'▲ no caminho':'• atenção'}</div>`:''}</div>`).join('');
+
+      const medalha = ['🥇','🥈','🥉'];
+      document.getElementById('tabela').innerHTML = ranked.map((v,i)=>{
+        const p = v.meta ? Math.round(v.realizado/v.meta*100) : 0;
+        const classe = p>=90?'ok':(p>=70?'atencao':'critico');
+        return `<tr>
+          <td class="forte" style="font-size:1.1rem;">${medalha[i]||(i+1)}</td>
+          <td><span class="celula-nome"><span class="avatar-mini">${iniciais(v.nome)}</span>
+            <span><strong>${esc(v.nome)}</strong><small>${esc(v.cargo||'')}</small></span></span></td>
+          <td class="num">${moedaCurta(v.meta)}</td>
+          <td class="num forte">${moedaCurta(v.realizado)}</td>
+          <td>
+            <div class="flex-entre" style="font-size:.8rem;margin-bottom:4px;"><span>${p}%</span></div>
+            <div class="barra"><div class="barra__preenche barra__preenche--${classe}" style="width:${Math.min(p,100)}%"></div></div>
+          </td>
+          <td class="num">${v.negocios||0}</td>
+        </tr>`;
+      }).join('');
+    }
+    montar();
+  </script>
+</body>
+</html>

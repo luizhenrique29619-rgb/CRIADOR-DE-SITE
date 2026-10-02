@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Propostas · Comercial Record</title>
+  <link rel="stylesheet" href="../css/sistema.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="overlay" id="overlay"></div>
+    <div class="principal">
+      <header class="topo" id="topo"></header>
+      <main class="conteudo" id="conteudo">
+        <div class="grade grade--kpi" id="kpis"></div>
+
+        <div class="ferramentas mt-20">
+          <div class="busca"><input type="text" id="busca" placeholder="Buscar por cliente ou número..." /></div>
+          <select id="filtroStatus" class="campo" style="margin:0;width:auto;">
+            <option value="">Todos os status</option>
+            <option>Rascunho</option><option>Enviada</option><option>Em negociação</option><option>Aprovada</option><option>Recusada</option>
+          </select>
+          <button class="btn btn--primario" id="btnNovo" style="margin-left:auto;">+ Nova proposta</button>
+        </div>
+
+        <div class="cartao oculto" id="formCard" style="margin-bottom:18px;">
+          <div class="cartao__cabeca"><h3>Nova proposta</h3></div>
+          <div class="cartao__corpo">
+            <form id="form">
+              <div class="form-linha">
+                <div class="campo"><label>Cliente *</label><input name="cliente" required /></div>
+                <div class="campo"><label>Valor (R$)</label><input name="valor" type="number" step="0.01" /></div>
+              </div>
+              <div class="form-linha">
+                <div class="campo"><label>Vendedor</label><input name="vendedor" /></div>
+                <div class="campo"><label>Status</label>
+                  <select name="status"><option>Rascunho</option><option>Enviada</option><option>Em negociação</option><option>Aprovada</option><option>Recusada</option></select>
+                </div>
+              </div>
+              <div class="flex-entre">
+                <span class="texto-2" id="formMsg" style="font-size:.85rem;"></span>
+                <span style="display:flex;gap:10px;">
+                  <button type="button" class="btn btn--neutro" id="btnCancelar">Cancelar</button>
+                  <button type="submit" class="btn btn--primario">Salvar</button>
+                </span>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="cartao">
+          <div class="tabela-wrap">
+            <table class="tabela">
+              <thead><tr><th>Nº</th><th>Cliente</th><th class="num">Valor</th><th>Vendedor</th><th>Validade</th><th>Status</th></tr></thead>
+              <tbody id="tabela"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/dados-exemplo.js"></script>
+  <script src="../js/sistema.js"></script>
+  <script>
+    montarLayout({ ativo: 'propostas', titulo: 'Propostas & Orçamentos', sub: 'Criação e acompanhamento' });
+    const badge = { 'Rascunho':'neutro','Enviada':'azul','Em negociação':'atencao','Aprovada':'ok','Recusada':'critico' };
+    let TODOS = [];
+
+    async function iniciar() {
+      const { dados, fonte } = await carregarDados('propostas', DADOS.propostas);
+      TODOS = dados; avisoFonte(fonte,'conteudo'); kpis(); render();
+    }
+    function kpis() {
+      const emAberto = TODOS.filter(p=>['Enviada','Em negociação'].includes(p.status));
+      const aprovadas = TODOS.filter(p=>p.status==='Aprovada');
+      const valorAberto = emAberto.reduce((s,p)=>s+Number(p.valor||0),0);
+      const decididas = TODOS.filter(p=>['Aprovada','Recusada'].includes(p.status)).length;
+      const conv = decididas ? Math.round(aprovadas.length/decididas*100) : 0;
+      document.getElementById('kpis').innerHTML = [
+        { i:'📄', r:'Total de propostas', v: TODOS.length },
+        { i:'⏳', r:'Em aberto', v: moedaCurta(valorAberto), d:`${emAberto.length} propostas` },
+        { i:'✅', r:'Aprovadas', v: aprovadas.length, d: moedaCurta(aprovadas.reduce((s,p)=>s+Number(p.valor||0),0)) },
+        { i:'📈', r:'Taxa de conversão', v: conv+'%', d:'aprovadas / decididas' },
+      ].map(k=>`<div class="kpi"><div class="kpi__rotulo"><span class="kpi__icone">${k.i}</span> ${k.r}</div><div class="kpi__valor">${k.v}</div>${k.d?`<div class="kpi__delta kpi__delta--sobe">• ${k.d}</div>`:''}</div>`).join('');
+    }
+    function render() {
+      const t = document.getElementById('busca').value.toLowerCase();
+      const s = document.getElementById('filtroStatus').value;
+      const fil = TODOS.filter(p=>`${p.cliente} ${p.numero||''}`.toLowerCase().includes(t) && (!s||p.status===s));
+      const tb = document.getElementById('tabela');
+      tb.innerHTML = fil.length ? fil.map(p=>`
+        <tr>
+          <td class="forte">${esc(p.numero||'—')}</td>
+          <td>${esc(p.cliente)}</td>
+          <td class="num forte">${moeda(p.valor)}</td>
+          <td>${esc(p.vendedor||'—')}</td>
+          <td>${dataBR(p.validade)}</td>
+          <td><span class="badge badge--${badge[p.status]||'neutro'}">${esc(p.status)}</span></td>
+        </tr>`).join('') : `<tr><td colspan="6" class="texto-2" style="text-align:center;padding:30px;">Nenhuma proposta encontrada.</td></tr>`;
+    }
+    document.getElementById('busca').addEventListener('input', render);
+    document.getElementById('filtroStatus').addEventListener('change', render);
+
+    const formCard = document.getElementById('formCard');
+    document.getElementById('btnNovo').addEventListener('click',()=>formCard.classList.toggle('oculto'));
+    document.getElementById('btnCancelar').addEventListener('click',()=>formCard.classList.add('oculto'));
+    document.getElementById('form').addEventListener('submit', async (e)=>{
+      e.preventDefault(); const f=e.target; const msg=document.getElementById('formMsg');
+      const n = { numero:'PROP-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*900+100)),
+        cliente:f.cliente.value.trim(), valor:Number(f.valor.value)||0, vendedor:f.vendedor.value.trim(),
+        status:f.status.value, data:new Date().toISOString().slice(0,10) };
+      if (window.supabaseClient) {
+        const { error } = await window.supabaseClient.from('propostas').insert([n]);
+        if (error) { msg.textContent='Erro: '+error.message; msg.style.color='var(--critico)'; return; }
+        msg.textContent='Proposta salva! ✅'; msg.style.color='var(--ok)'; await iniciar();
+      } else { n.id=Date.now(); TODOS.unshift(n); kpis(); render();
+        msg.textContent='Adicionada (exemplo local).'; msg.style.color='var(--atencao)'; }
+      f.reset(); setTimeout(()=>{ formCard.classList.add('oculto'); msg.textContent=''; },1400);
+    });
+    iniciar();
+  </script>
+</body>
+</html>

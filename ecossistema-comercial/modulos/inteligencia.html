@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inteligência de Mercado · Comercial Record</title>
+  <link rel="stylesheet" href="../css/sistema.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="overlay" id="overlay"></div>
+    <div class="principal">
+      <header class="topo" id="topo"></header>
+      <main class="conteudo" id="conteudo">
+
+        <div class="cartao" style="background:linear-gradient(120deg,var(--marca-navy),var(--marca-azul));color:#fff;border:none;margin-bottom:22px;">
+          <div class="cartao__corpo">
+            <h2 style="font-size:1.25rem;margin-bottom:4px;">🧭 Inteligência de Mercado</h2>
+            <p style="opacity:.9;max-width:640px;font-size:.92rem;">
+              Indicadores econômicos e de mercado para embasar a estratégia de vendas.
+              Acompanhe inflação, atividade econômica do Nordeste e o investimento publicitário.
+            </p>
+          </div>
+        </div>
+
+        <div class="secao-titulo"><h2>Indicadores</h2><span class="secao-titulo__sub">Atualize conforme as fontes oficiais</span></div>
+        <div class="grade grade--3" id="indicadores"></div>
+
+        <div class="cartao mt-20">
+          <div class="cartao__cabeca"><h3>Como manter atualizado</h3></div>
+          <div class="cartao__corpo">
+            <p class="texto-2" style="font-size:.9rem;margin-bottom:12px;">
+              Estes números mudam todo mês/trimestre. Puxe sempre das fontes oficiais antes de
+              usar numa reunião ou proposta:
+            </p>
+            <ul class="texto-2" style="font-size:.9rem;padding-left:20px;line-height:1.9;">
+              <li><strong>IPCA / INPC:</strong> IBGE (inflação oficial)</li>
+              <li><strong>PIB e atividade regional:</strong> IBGE / Banco Central</li>
+              <li><strong>Investimento publicitário:</strong> relatórios de mídia do setor</li>
+              <li><strong>Confiança do consumidor:</strong> FGV / CNC</li>
+            </ul>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/dados-exemplo.js"></script>
+  <script src="../js/sistema.js"></script>
+  <script>
+    montarLayout({ ativo: 'inteligencia', titulo: 'Inteligência de Mercado', sub: 'Indicadores e cenário' });
+    const varInfo = {
+      'alta':    { icone:'▲', cor:'var(--ok)',      texto:'Em alta' },
+      'baixa':   { icone:'▼', cor:'var(--critico)', texto:'Em baixa' },
+      'estavel': { icone:'◆', cor:'var(--texto-2)', texto:'Estável' },
+    };
+    async function montar() {
+      const { dados, fonte } = await carregarDados('indicadores', DADOS.indicadores);
+      avisoFonte(fonte,'conteudo');
+      document.getElementById('indicadores').innerHTML = dados.map(ind=>{
+        const v = varInfo[ind.variacao] || varInfo['estavel'];
+        return `<div class="cartao"><div class="cartao__corpo">
+          <div class="kpi__rotulo">${esc(ind.nome)}</div>
+          <div class="flex-entre" style="margin:8px 0 4px;">
+            <span class="kpi__valor" style="margin:0;font-size:1.6rem;">${esc(ind.valor)}</span>
+            <span style="color:${v.cor};font-weight:700;font-size:.85rem;">${v.icone} ${v.texto}</span>
+          </div>
+          <p class="texto-2" style="font-size:.82rem;">${esc(ind.obs||'')}</p>
+        </div></div>`;
+      }).join('');
+    }
+    montar();
+  </script>
+</body>
+</html>

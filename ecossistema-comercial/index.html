@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal · Comercial Record</title>
+  <meta name="description" content="Ecossistema do setor comercial da Record — portal central." />
+  <link rel="stylesheet" href="css/sistema.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="overlay" id="overlay"></div>
+
+    <div class="principal">
+      <header class="topo" id="topo"></header>
+
+      <main class="conteudo" id="conteudo">
+
+        <!-- Banner de boas-vindas -->
+        <div class="cartao" style="background:linear-gradient(120deg,var(--marca-navy),var(--marca-azul));color:#fff;border:none;margin-bottom:22px;">
+          <div class="cartao__corpo" style="padding:28px;">
+            <h2 style="font-size:1.5rem;margin-bottom:6px;">Ecossistema Comercial Record 📺</h2>
+            <p style="opacity:.9;max-width:640px;">
+              Central de inteligência de mercado e estratégia de vendas do setor comercial.
+              Acompanhe metas, gerencie clientes, mova o funil e feche mais negócios — tudo em um só lugar.
+            </p>
+          </div>
+        </div>
+
+        <!-- Visão geral (KPIs) -->
+        <div class="grade grade--kpi" id="kpis"></div>
+
+        <!-- Módulos -->
+        <div class="secao-titulo mt-20">
+          <h2>Módulos do ecossistema</h2>
+          <span class="secao-titulo__sub">Clique para abrir</span>
+        </div>
+        <div class="grade grade--mod" id="modulos"></div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/dados-exemplo.js"></script>
+  <script src="js/sistema.js"></script>
+  <script>
+    montarLayout({ ativo: 'inicio', titulo: 'Portal Comercial', sub: 'Visão geral do setor' });
+
+    // ----- KPIs de visão geral (a partir dos dados) -----
+    async function montarKPIs() {
+      const { dados: clientes } = await carregarDados('clientes', DADOS.clientes);
+      const { dados: oport }    = await carregarDados('oportunidades', DADOS.oportunidades);
+      const { dados: props }    = await carregarDados('propostas', DADOS.propostas);
+      const { dados: vend }     = await carregarDados('vendedores', DADOS.vendedores);
+
+      const ativos = clientes.filter(c => c.status === 'Ativo').length;
+      const abertas = oport.filter(o => o.estagio !== 'Fechado');
+      const valorFunil = abertas.reduce((s, o) => s + Number(o.valor || 0), 0);
+      const propsPendentes = props.filter(p => ['Enviada','Em negociação','Rascunho'].includes(p.status)).length;
+      const realizado = vend.reduce((s, v) => s + Number(v.realizado || 0), 0);
+      const meta = vend.reduce((s, v) => s + Number(v.meta || 0), 0);
+      const atingido = meta ? Math.round((realizado / meta) * 100) : 0;
+
+      const kpis = [
+        { icone:'💰', rotulo:'Realizado no mês', valor: moedaCurta(realizado), delta:`${atingido}% da meta`, sobe: atingido >= 80 },
+        { icone:'👥', rotulo:'Clientes ativos',  valor: ativos,                delta:`${clientes.length} no total`, sobe:true },
+        { icone:'🫧', rotulo:'Funil aberto',      valor: moedaCurta(valorFunil),delta:`${abertas.length} oportunidades`, sobe:true },
+        { icone:'📄', rotulo:'Propostas pendentes',valor: propsPendentes,       delta:'aguardando retorno', sobe:false },
+      ];
+
+      document.getElementById('kpis').innerHTML = kpis.map(k => `
+        <div class="kpi">
+          <div class="kpi__rotulo"><span class="kpi__icone">${k.icone}</span> ${k.rotulo}</div>
+          <div class="kpi__valor">${k.valor}</div>
+          <div class="kpi__delta ${k.sobe ? 'kpi__delta--sobe' : 'kpi__delta--desce'}">${k.sobe ? '▲' : '•'} ${k.delta}</div>
+        </div>
+      `).join('');
+    }
+    montarKPIs();
+
+    // ----- Cartões dos módulos -----
+    const descricoes = {
+      dashboard:    'Metas, funil e KPIs em um painel visual.',
+      crm:          'Clientes, leads e histórico de contas.',
+      funil:        'Oportunidades por estágio (pipeline).',
+      propostas:    'Criação e acompanhamento de propostas.',
+      catalogo:     'Produtos e pacotes de mídia da casa.',
+      inteligencia: 'Indicadores de mercado e cenário.',
+      equipe:       'Vendedores, metas e ranking.',
+      agenda:       'Compromissos, campanhas e prazos.',
+    };
+    document.getElementById('modulos').innerHTML = MODULOS
+      .filter(m => m.id !== 'inicio')
+      .map(m => `
+        <a class="card-modulo" href="${m.href}">
+          <div class="card-modulo__icone">${m.icone}</div>
+          <div class="card-modulo__titulo">${m.nome}</div>
+          <div class="card-modulo__desc">${descricoes[m.id] || ''}</div>
+          <div class="card-modulo__link">Abrir →</div>
+        </a>
+      `).join('');
+  </script>
+</body>
+</html>

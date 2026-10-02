@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard · Comercial Record</title>
+  <link rel="stylesheet" href="../css/sistema.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="overlay" id="overlay"></div>
+
+    <div class="principal">
+      <header class="topo" id="topo"></header>
+
+      <main class="conteudo" id="conteudo">
+        <!-- KPIs -->
+        <div class="grade grade--kpi" id="kpis"></div>
+
+        <!-- Gráficos -->
+        <div class="grade grade--2 mt-20">
+          <div class="cartao">
+            <div class="cartao__cabeca"><h3>Vendas por mês</h3><span class="badge badge--azul">R$</span></div>
+            <div class="cartao__corpo">
+              <div class="grafico-barras" id="graficoVendas"></div>
+            </div>
+          </div>
+
+          <div class="cartao">
+            <div class="cartao__cabeca"><h3>Funil de vendas</h3><span class="secao-titulo__sub" id="funilTotal"></span></div>
+            <div class="cartao__corpo" id="funil"></div>
+          </div>
+        </div>
+
+        <!-- Metas por vendedor + propostas -->
+        <div class="grade grade--2 mt-20">
+          <div class="cartao">
+            <div class="cartao__cabeca"><h3>Metas por vendedor</h3></div>
+            <div class="cartao__corpo" id="metas"></div>
+          </div>
+
+          <div class="cartao">
+            <div class="cartao__cabeca"><h3>Propostas recentes</h3><a class="btn btn--neutro btn--pequeno" href="propostas.html">Ver todas</a></div>
+            <div class="tabela-wrap">
+              <table class="tabela">
+                <thead><tr><th>Nº</th><th>Cliente</th><th class="num">Valor</th><th>Status</th></tr></thead>
+                <tbody id="tabelaPropostas"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/dados-exemplo.js"></script>
+  <script src="../js/sistema.js"></script>
+  <script>
+    montarLayout({ ativo: 'dashboard', titulo: 'Dashboard Comercial', sub: 'Metas, funil e desempenho' });
+
+    const badgeProposta = {
+      'Rascunho':'neutro', 'Enviada':'azul', 'Em negociação':'atencao',
+      'Aprovada':'ok', 'Recusada':'critico'
+    };
+
+    async function montar() {
+      const [cli, opo, pro, ven, vm] = await Promise.all([
+        carregarDados('clientes', DADOS.clientes),
+        carregarDados('oportunidades', DADOS.oportunidades),
+        carregarDados('propostas', DADOS.propostas),
+        carregarDados('vendedores', DADOS.vendedores),
+        carregarDados('vendas_mensais', DADOS.vendas_mensais),
+      ]);
+      avisoFonte(ven.fonte, 'conteudo');
+
+      // ---- KPIs ----
+      const realizado = ven.dados.reduce((s,v)=>s+Number(v.realizado||0),0);
+      const meta = ven.dados.reduce((s,v)=>s+Number(v.meta||0),0);
+      const atingido = meta ? Math.round(realizado/meta*100) : 0;
+      const abertas = opo.dados.filter(o=>!['Fechado','Perdido'].includes(o.estagio));
+      const funilValor = abertas.reduce((s,o)=>s+Number(o.valor||0),0);
+      const ativos = cli.dados.filter(c=>c.status==='Ativo').length;
+      const ticket = ven.dados.reduce((s,v)=>s+Number(v.negocios||0),0);
+      const ticketMedio = ticket ? realizado/ticket : 0;
+
+      document.getElementById('kpis').innerHTML = [
+        { i:'💰', r:'Realizado no mês', v: moedaCurta(realizado), d:`${atingido}% da meta`, up: atingido>=80 },
+        { i:'🎯', r:'Meta do mês',      v: moedaCurta(meta),      d:`faltam ${moedaCurta(Math.max(meta-realizado,0))}`, up: true },
+        { i:'🫧', r:'Funil aberto',     v: moedaCurta(funilValor),d:`${abertas.length} oportunidades`, up:true },
+        { i:'🧾', r:'Ticket médio',     v: moedaCurta(ticketMedio),d:`${ativos} clientes ativos`, up:true },
+      ].map(k=>`
+        <div class="kpi">
+          <div class="kpi__rotulo"><span class="kpi__icone">${k.i}</span> ${k.r}</div>
+          <div class="kpi__valor">${k.v}</div>
+          <div class="kpi__delta ${k.up?'kpi__delta--sobe':'kpi__delta--desce'}">${k.up?'▲':'•'} ${k.d}</div>
+        </div>`).join('');
+
+      // ---- Gráfico de vendas (barras, 1 série = 1 cor) ----
+      const maxV = Math.max(...vm.dados.map(m=>Number(m.valor||0)), 1);
+      document.getElementById('graficoVendas').innerHTML = vm.dados.map(m=>{
+        const alt = Math.round(Number(m.valor||0)/maxV*100);
+        return `<div class="gb-col" title="${esc(m.mes)}: ${moeda(m.valor)}">
+          <span class="gb-valor">${moedaCurta(m.valor)}</span>
+          <div class="gb-barra" style="height:${alt}%"></div>
+          <span class="gb-rotulo">${esc(m.mes)}</span>
+        </div>`;
+      }).join('');
+
+      // ---- Funil (rampa azul ordinal: escuro->claro, nunca < step 250) ----
+      const estagios = ['Prospecção','Qualificação','Proposta','Negociação','Fechado'];
+      const cores = ['var(--az-700)','var(--az-600)','var(--az-500)','var(--az-400)','var(--az-250)'];
+      const porEstagio = estagios.map(e => {
+        const its = opo.dados.filter(o=>o.estagio===e);
+        return { estagio:e, qtd: its.length, valor: its.reduce((s,o)=>s+Number(o.valor||0),0) };
+      });
+      const maxF = Math.max(...porEstagio.map(p=>p.valor), 1);
+      document.getElementById('funil').innerHTML = porEstagio.map((p,i)=>{
+        const larg = Math.max(Math.round(p.valor/maxF*100), 8);
+        return `<div style="margin-bottom:12px;">
+          <div class="flex-entre" style="font-size:.85rem;margin-bottom:5px;">
+            <strong>${esc(p.estagio)}</strong>
+            <span class="texto-2">${p.qtd} · ${moedaCurta(p.valor)}</span>
+          </div>
+          <div style="height:22px;border-radius:7px;background:var(--cartao-2);overflow:hidden;">
+            <div style="height:100%;width:${larg}%;background:${cores[i]};border-radius:7px;"></div>
+          </div>
+        </div>`;
+      }).join('');
+      const totFunil = porEstagio.filter(p=>p.estagio!=='Fechado').reduce((s,p)=>s+p.valor,0);
+      document.getElementById('funilTotal').textContent = 'Em aberto: ' + moedaCurta(totFunil);
+
+      // ---- Metas por vendedor (barra + status) ----
+      document.getElementById('metas').innerHTML = ven.dados.map(v=>{
+        const p = v.meta ? Math.round(v.realizado/v.meta*100) : 0;
+        const classe = p>=90 ? 'ok' : (p>=70 ? 'atencao' : 'critico');
+        return `<div style="margin-bottom:15px;">
+          <div class="flex-entre" style="margin-bottom:6px;">
+            <span class="celula-nome"><span class="avatar-mini">${iniciais(v.nome)}</span>
+              <span><strong>${esc(v.nome)}</strong><small>${esc(v.cargo||'')}</small></span></span>
+            <span style="font-weight:700;">${p}%</span>
+          </div>
+          <div class="barra"><div class="barra__preenche barra__preenche--${classe}" style="width:${Math.min(p,100)}%"></div></div>
+          <div class="texto-2" style="font-size:.78rem;margin-top:4px;">${moedaCurta(v.realizado)} de ${moedaCurta(v.meta)}</div>
+        </div>`;
+      }).join('');
+
+      // ---- Propostas recentes ----
+      document.getElementById('tabelaPropostas').innerHTML = pro.dados.slice(0,5).map(p=>`
+        <tr>
+          <td class="forte">${esc(p.numero||'—')}</td>
+          <td>${esc(p.cliente)}</td>
+          <td class="num">${moeda(p.valor)}</td>
+          <td><span class="badge badge--${badgeProposta[p.status]||'neutro'}">${esc(p.status)}</span></td>
+        </tr>`).join('');
+    }
+    montar();
+  </script>
+</body>
+</html>

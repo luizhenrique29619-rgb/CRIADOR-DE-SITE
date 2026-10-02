@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agenda · Comercial Record</title>
+  <link rel="stylesheet" href="../css/sistema.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="overlay" id="overlay"></div>
+    <div class="principal">
+      <header class="topo" id="topo"></header>
+      <main class="conteudo" id="conteudo">
+        <div class="grade grade--kpi" id="kpis"></div>
+
+        <div class="secao-titulo mt-20"><h2>Próximos compromissos</h2><span class="secao-titulo__sub">Agrupados por dia</span></div>
+        <div id="lista"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/dados-exemplo.js"></script>
+  <script src="../js/sistema.js"></script>
+  <script>
+    montarLayout({ ativo: 'agenda', titulo: 'Agenda Comercial', sub: 'Compromissos e prazos' });
+    const badgeTipo = { 'Reunião':'azul','Apresentação':'atencao','Fechamento':'ok','Prospecção':'serio','Follow-up':'azul','Interno':'neutro' };
+
+    async function montar() {
+      const { dados, fonte } = await carregarDados('compromissos', DADOS.compromissos);
+      avisoFonte(fonte,'conteudo');
+      const ord = [...dados].sort((a,b)=> (a.data+a.hora).localeCompare(b.data+b.hora));
+
+      const tipos = new Set(ord.map(c=>c.tipo)).size;
+      document.getElementById('kpis').innerHTML = [
+        { i:'📅', r:'Compromissos', v: ord.length },
+        { i:'🤝', r:'Reuniões', v: ord.filter(c=>c.tipo==='Reunião').length },
+        { i:'🏁', r:'Fechamentos', v: ord.filter(c=>c.tipo==='Fechamento').length },
+        { i:'🗂️', r:'Tipos de atividade', v: tipos },
+      ].map(k=>`<div class="kpi"><div class="kpi__rotulo"><span class="kpi__icone">${k.i}</span> ${k.r}</div><div class="kpi__valor">${k.v}</div></div>`).join('');
+
+      // agrupa por dia
+      const grupos = {};
+      ord.forEach(c=>{ (grupos[c.data] = grupos[c.data] || []).push(c); });
+      document.getElementById('lista').innerHTML = Object.keys(grupos).map(dia=>`
+        <div class="cartao" style="margin-bottom:16px;">
+          <div class="cartao__cabeca"><h3>📆 ${dataBR(dia)}</h3><span class="badge badge--neutro">${grupos[dia].length} item(ns)</span></div>
+          <div class="cartao__corpo" style="padding:0;">
+            ${grupos[dia].map(c=>`
+              <div class="flex-entre" style="padding:14px 20px;border-bottom:1px solid var(--borda);">
+                <div style="display:flex;align-items:center;gap:14px;">
+                  <strong style="font-variant-numeric:tabular-nums;min-width:48px;">${esc(c.hora||'')}</strong>
+                  <div>
+                    <div style="font-weight:600;">${esc(c.titulo)}</div>
+                    <small class="texto-2">👤 ${esc(c.responsavel||'—')}</small>
+                  </div>
+                </div>
+                <span class="badge badge--${badgeTipo[c.tipo]||'neutro'}">${esc(c.tipo||'')}</span>
+              </div>`).join('')}
+          </div>
+        </div>`).join('');
+    }
+    montar();
+  </script>
+</body>
+</html>

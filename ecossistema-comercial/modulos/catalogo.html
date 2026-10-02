@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catálogo · Comercial Record</title>
+  <link rel="stylesheet" href="../css/sistema.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="overlay" id="overlay"></div>
+    <div class="principal">
+      <header class="topo" id="topo"></header>
+      <main class="conteudo" id="conteudo">
+        <div class="grade grade--kpi" id="kpis"></div>
+
+        <div class="ferramentas mt-20">
+          <div class="busca"><input type="text" id="busca" placeholder="Buscar produto de mídia..." /></div>
+          <select id="filtroTipo" class="campo" style="margin:0;width:auto;">
+            <option value="">Todos os tipos</option>
+            <option>Spot</option><option>Patrocínio</option><option>Merchandising</option><option>Pacote</option><option>Projeto</option>
+          </select>
+        </div>
+
+        <div class="grade grade--3" id="grade"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/dados-exemplo.js"></script>
+  <script src="../js/sistema.js"></script>
+  <script>
+    montarLayout({ ativo: 'catalogo', titulo: 'Catálogo Comercial', sub: 'Produtos e pacotes de mídia' });
+    const iconeTipo = { 'Spot':'🎬','Patrocínio':'⭐','Merchandising':'🛍️','Pacote':'📦','Projeto':'🎯' };
+    let TODOS = [];
+
+    async function iniciar() {
+      const { dados, fonte } = await carregarDados('produtos', DADOS.produtos);
+      TODOS = dados; avisoFonte(fonte,'conteudo');
+      const precos = TODOS.map(p=>Number(p.preco||0));
+      const medio = precos.length ? precos.reduce((a,b)=>a+b,0)/precos.length : 0;
+      const tipos = new Set(TODOS.map(p=>p.tipo)).size;
+      document.getElementById('kpis').innerHTML = [
+        { i:'📺', r:'Produtos no catálogo', v: TODOS.length },
+        { i:'🏷️', r:'Tipos de mídia', v: tipos },
+        { i:'💵', r:'Ticket médio', v: moedaCurta(medio) },
+        { i:'⬆️', r:'Maior pacote', v: moedaCurta(Math.max(...precos,0)) },
+      ].map(k=>`<div class="kpi"><div class="kpi__rotulo"><span class="kpi__icone">${k.i}</span> ${k.r}</div><div class="kpi__valor">${k.v}</div></div>`).join('');
+      render();
+    }
+    function render() {
+      const t = document.getElementById('busca').value.toLowerCase();
+      const tp = document.getElementById('filtroTipo').value;
+      const fil = TODOS.filter(p=>`${p.nome} ${p.descricao||''}`.toLowerCase().includes(t) && (!tp||p.tipo===tp));
+      const g = document.getElementById('grade');
+      g.innerHTML = fil.length ? fil.map(p=>`
+        <div class="cartao"><div class="cartao__corpo">
+          <div class="flex-entre" style="margin-bottom:10px;">
+            <span class="card-modulo__icone" style="width:42px;height:42px;font-size:1.25rem;margin:0;">${iconeTipo[p.tipo]||'📺'}</span>
+            <span class="badge badge--azul">${esc(p.tipo||'')}</span>
+          </div>
+          <h3 style="font-size:1rem;">${esc(p.nome)}</h3>
+          <p class="texto-2" style="font-size:.84rem;margin:6px 0 12px;">${esc(p.descricao||'')}</p>
+          <div class="flex-entre">
+            <span class="texto-2" style="font-size:.78rem;">${esc(p.faixa||'')}</span>
+            <strong style="color:var(--marca-azul);font-size:1.1rem;">${moeda(p.preco)}</strong>
+          </div>
+        </div></div>`).join('') : `<p class="texto-2">Nenhum produto encontrado.</p>`;
+    }
+    document.getElementById('busca').addEventListener('input', render);
+    document.getElementById('filtroTipo').addEventListener('change', render);
+    iniciar();
+  </script>
+</body>
+</html>

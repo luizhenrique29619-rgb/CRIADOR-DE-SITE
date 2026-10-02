@@ -28,10 +28,16 @@ CRIADOR-DE-SITE/
 │   ├── supabase/
 │   │   └── schema.sql    ← cria a tabela de contatos no banco
 │   └── vercel.json       ← configuração de publicação na Vercel
+├── ecossistema-comercial/ ← 🏢 sistema interno do comercial da Record (8 módulos)
 ├── sites/                ← cada site criado vira uma pasta aqui dentro
 ├── novo-site.sh          ← cria um site novo copiando o modelo-base
 └── README.md             ← este arquivo
 ```
+
+> 🏢 **Ecossistema Comercial Record:** um sistema completo (portal + 8 módulos:
+> dashboard, CRM, funil, propostas, catálogo, inteligência, equipe e agenda) vive
+> em `ecossistema-comercial/`. Veja o README próprio dessa pasta para rodar e
+> configurar o Supabase.
 
 ---
 
