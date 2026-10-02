@@ -15,35 +15,61 @@
       <header class="topo" id="topo"></header>
 
       <main class="conteudo" id="conteudo">
+
+        <!-- Período -->
+        <div class="ferramentas">
+          <div class="secao-titulo__sub" style="font-weight:600;">Visão geral do comercial</div>
+          <div class="periodo" id="periodo" style="margin-left:auto;">
+            <button class="periodo__btn" data-n="3">3 meses</button>
+            <button class="periodo__btn" data-n="6">6 meses</button>
+            <button class="periodo__btn" data-n="12">12 meses</button>
+          </div>
+        </div>
+
         <!-- KPIs -->
         <div class="grade grade--kpi" id="kpis"></div>
 
-        <!-- Gráficos -->
+        <!-- Tendência (linha) -->
+        <div class="cartao mt-20">
+          <div class="cartao__cabeca">
+            <h3>Tendência de vendas</h3>
+            <span class="secao-titulo__sub">passe o mouse para ver cada mês</span>
+          </div>
+          <div class="cartao__corpo">
+            <div class="gr-linha" id="tendencia"></div>
+          </div>
+        </div>
+
+        <!-- Vendedor + Segmento -->
         <div class="grade grade--2 mt-20">
           <div class="cartao">
-            <div class="cartao__cabeca"><h3>Vendas por mês</h3><span class="badge badge--azul">R$</span></div>
+            <div class="cartao__cabeca"><h3>Meta × Realizado por vendedor</h3></div>
             <div class="cartao__corpo">
-              <div class="grafico-barras" id="graficoVendas"></div>
+              <div id="vendedores"></div>
+              <div class="legenda" style="margin-top:10px;">
+                <span><i style="background:var(--ok);"></i> Realizado</span>
+                <span><i style="background:var(--texto);width:3px;border-radius:2px;height:13px;"></i> Meta (alvo)</span>
+              </div>
             </div>
           </div>
 
           <div class="cartao">
-            <div class="cartao__cabeca"><h3>Funil de vendas</h3><span class="secao-titulo__sub" id="funilTotal"></span></div>
-            <div class="cartao__corpo" id="funil"></div>
+            <div class="cartao__cabeca"><h3>Vendas por segmento</h3></div>
+            <div class="cartao__corpo" id="segmentos"></div>
           </div>
         </div>
 
-        <!-- Metas por vendedor + propostas -->
+        <!-- Funil + Propostas -->
         <div class="grade grade--2 mt-20">
           <div class="cartao">
-            <div class="cartao__cabeca"><h3>Metas por vendedor</h3></div>
-            <div class="cartao__corpo" id="metas"></div>
+            <div class="cartao__cabeca"><h3>Funil resumido</h3><a class="btn btn--neutro btn--pequeno" href="funil.html">Abrir funil</a></div>
+            <div class="cartao__corpo" id="funil"></div>
           </div>
 
           <div class="cartao">
             <div class="cartao__cabeca"><h3>Propostas recentes</h3><a class="btn btn--neutro btn--pequeno" href="propostas.html">Ver todas</a></div>
             <div class="tabela-wrap">
-              <table class="tabela">
+              <table class="tabela" style="min-width:420px;">
                 <thead><tr><th>Nº</th><th>Cliente</th><th class="num">Valor</th><th>Status</th></tr></thead>
                 <tbody id="tabelaPropostas"></tbody>
               </table>
@@ -56,106 +82,180 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../js/supabase.js"></script>
+  <script src="../js/cvcrm.js"></script>
   <script src="../js/dados-exemplo.js"></script>
   <script src="../js/sistema.js"></script>
   <script>
-    montarLayout({ ativo: 'dashboard', titulo: 'Dashboard Comercial', sub: 'Metas, funil e desempenho' });
+    montarLayout({ ativo: 'dashboard', titulo: 'Dashboard Comercial', sub: 'Metas, tendência e desempenho' });
 
-    const badgeProposta = {
-      'Rascunho':'neutro', 'Enviada':'azul', 'Em negociação':'atencao',
-      'Aprovada':'ok', 'Recusada':'critico'
-    };
+    const badgeProposta = { 'Rascunho':'neutro','Enviada':'azul','Em negociação':'atencao','Aprovada':'ok','Recusada':'critico' };
+    let VENDAS = [], SNAP = {};
+
+    const kpiHTML = (k)=>`<div class="kpi">
+      <div class="kpi__rotulo"><span class="kpi__icone">${k.i}</span> ${k.r}</div>
+      <div class="kpi__valor">${k.v}</div>
+      <div class="kpi__delta ${k.up?'kpi__delta--sobe':'kpi__delta--desce'}">${k.up?'▲':'▼'} ${k.d}</div>
+    </div>`;
 
     async function montar() {
       const [cli, opo, pro, ven, vm] = await Promise.all([
-        carregarDados('clientes', DADOS.clientes),
+        carregarDados('clientes', DADOS.clientes, 'clientes'),
         carregarDados('oportunidades', DADOS.oportunidades),
         carregarDados('propostas', DADOS.propostas),
         carregarDados('vendedores', DADOS.vendedores),
-        carregarDados('vendas_mensais', DADOS.vendas_mensais),
+        carregarDados('vendas_mensais', DADOS.vendas_mensais, 'vendas'),
       ]);
-      avisoFonte(ven.fonte, 'conteudo');
+      avisoFonte(vm.fonte, 'conteudo');
+      VENDAS = vm.dados;
 
-      // ---- KPIs ----
       const realizado = ven.dados.reduce((s,v)=>s+Number(v.realizado||0),0);
       const meta = ven.dados.reduce((s,v)=>s+Number(v.meta||0),0);
-      const atingido = meta ? Math.round(realizado/meta*100) : 0;
       const abertas = opo.dados.filter(o=>!['Fechado','Perdido'].includes(o.estagio));
-      const funilValor = abertas.reduce((s,o)=>s+Number(o.valor||0),0);
-      const ativos = cli.dados.filter(c=>c.status==='Ativo').length;
-      const ticket = ven.dados.reduce((s,v)=>s+Number(v.negocios||0),0);
-      const ticketMedio = ticket ? realizado/ticket : 0;
+      SNAP = {
+        meta, realizado, atingido: meta?Math.round(realizado/meta*100):0,
+        funilAberto: abertas.reduce((s,o)=>s+Number(o.valor||0),0), abertasN: abertas.length,
+      };
+
+      document.getElementById('vendedores').innerHTML = barrasVendedor(ven.dados);
+      document.getElementById('segmentos').innerHTML = barrasSegmento(cli.dados);
+      montarFunil(opo.dados);
+      document.getElementById('tabelaPropostas').innerHTML = pro.dados.slice(0,5).map(p=>`
+        <tr><td class="forte">${esc(p.numero||'—')}</td><td>${esc(p.cliente)}</td>
+        <td class="num">${moeda(p.valor)}</td>
+        <td><span class="badge badge--${badgeProposta[p.status]||'neutro'}">${esc(p.status)}</span></td></tr>`).join('');
+
+      aplicarPeriodo(6);
+    }
+
+    function aplicarPeriodo(n) {
+      document.querySelectorAll('.periodo__btn').forEach(b=>b.classList.toggle('periodo__btn--ativo', Number(b.dataset.n)===n));
+      const slice = VENDAS.slice(-n);
+      const receita = slice.reduce((s,d)=>s+Number(d.valor||0),0);
+      const prim = Number(slice[0]?.valor||0), ult = Number(slice[slice.length-1]?.valor||0);
+      const cresc = prim ? Math.round((ult-prim)/prim*100) : 0;
 
       document.getElementById('kpis').innerHTML = [
-        { i:'💰', r:'Realizado no mês', v: moedaCurta(realizado), d:`${atingido}% da meta`, up: atingido>=80 },
-        { i:'🎯', r:'Meta do mês',      v: moedaCurta(meta),      d:`faltam ${moedaCurta(Math.max(meta-realizado,0))}`, up: true },
-        { i:'🫧', r:'Funil aberto',     v: moedaCurta(funilValor),d:`${abertas.length} oportunidades`, up:true },
-        { i:'🧾', r:'Ticket médio',     v: moedaCurta(ticketMedio),d:`${ativos} clientes ativos`, up:true },
-      ].map(k=>`
-        <div class="kpi">
-          <div class="kpi__rotulo"><span class="kpi__icone">${k.i}</span> ${k.r}</div>
-          <div class="kpi__valor">${k.v}</div>
-          <div class="kpi__delta ${k.up?'kpi__delta--sobe':'kpi__delta--desce'}">${k.up?'▲':'•'} ${k.d}</div>
-        </div>`).join('');
+        { i:'💰', r:`Receita (${n} meses)`, v: moedaCurta(receita), d:`${slice.length} meses no período`, up:true },
+        { i:'📈', r:'Crescimento', v:(cresc>=0?'+':'')+cresc+'%', d:'1º vs. último mês', up: cresc>=0 },
+        { i:'🎯', r:'Meta do mês', v: SNAP.atingido+'%', d: moedaCurta(SNAP.realizado)+' de '+moedaCurta(SNAP.meta), up: SNAP.atingido>=80 },
+        { i:'🫧', r:'Funil aberto', v: moedaCurta(SNAP.funilAberto), d: SNAP.abertasN+' oportunidades', up:true },
+      ].map(kpiHTML).join('');
 
-      // ---- Gráfico de vendas (barras, 1 série = 1 cor) ----
-      const maxV = Math.max(...vm.dados.map(m=>Number(m.valor||0)), 1);
-      document.getElementById('graficoVendas').innerHTML = vm.dados.map(m=>{
-        const alt = Math.round(Number(m.valor||0)/maxV*100);
-        return `<div class="gb-col" title="${esc(m.mes)}: ${moeda(m.valor)}">
-          <span class="gb-valor">${moedaCurta(m.valor)}</span>
-          <div class="gb-barra" style="height:${alt}%"></div>
-          <span class="gb-rotulo">${esc(m.mes)}</span>
+      desenharTendencia(slice);
+    }
+
+    // ---- Barras meta × realizado ----
+    function barrasVendedor(vend) {
+      const trackMax = Math.max(...vend.map(v=>Math.max(Number(v.meta||0),Number(v.realizado||0))),1);
+      return vend.map(v=>{
+        const rp = Number(v.realizado||0)/trackMax*100;
+        const mp = Number(v.meta||0)/trackMax*100;
+        const at = v.meta ? Math.round(v.realizado/v.meta*100) : 0;
+        const classe = at>=90?'ok':(at>=70?'atencao':'critico');
+        return `<div class="mr-item">
+          <div class="flex-entre" style="margin-bottom:6px;">
+            <span class="celula-nome"><span class="avatar-mini">${iniciais(v.nome)}</span><strong>${esc(v.nome)}</strong></span>
+            <span style="font-weight:700;">${moedaCurta(v.realizado)} <span class="texto-2" style="font-weight:500;">/ ${moedaCurta(v.meta)}</span></span>
+          </div>
+          <div class="mr-track">
+            <div class="mr-fill mr-fill--${classe}" style="width:${Math.min(rp,100)}%"></div>
+            <div class="mr-meta" style="left:${Math.min(mp,100)}%" title="Meta: ${moeda(v.meta)}"></div>
+          </div>
+          <div class="texto-2" style="font-size:.76rem;margin-top:4px;">${at}% da meta</div>
         </div>`;
       }).join('');
+    }
 
-      // ---- Funil (rampa azul ordinal: escuro->claro, nunca < step 250) ----
+    // ---- Barras por segmento ----
+    function barrasSegmento(clientes) {
+      const map = {};
+      clientes.forEach(c=>{ const s=c.segmento||'Outros'; map[s]=(map[s]||0)+Number(c.valor_mes||0); });
+      const arr = Object.entries(map).map(([seg,val])=>({seg,val})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val);
+      if (!arr.length) return '<p class="texto-2">Sem receita por segmento.</p>';
+      const max = Math.max(...arr.map(a=>a.val),1);
+      return arr.map(a=>`<div class="seg-item">
+        <div class="flex-entre" style="font-size:.84rem;margin-bottom:4px;"><span>${esc(a.seg)}</span><strong>${moedaCurta(a.val)}</strong></div>
+        <div class="barra"><div class="barra__preenche" style="width:${a.val/max*100}%"></div></div>
+      </div>`).join('');
+    }
+
+    // ---- Funil resumido ----
+    function montarFunil(opo) {
       const estagios = ['Prospecção','Qualificação','Proposta','Negociação','Fechado'];
       const cores = ['var(--az-700)','var(--az-600)','var(--az-500)','var(--az-400)','var(--az-250)'];
-      const porEstagio = estagios.map(e => {
-        const its = opo.dados.filter(o=>o.estagio===e);
-        return { estagio:e, qtd: its.length, valor: its.reduce((s,o)=>s+Number(o.valor||0),0) };
-      });
-      const maxF = Math.max(...porEstagio.map(p=>p.valor), 1);
-      document.getElementById('funil').innerHTML = porEstagio.map((p,i)=>{
-        const larg = Math.max(Math.round(p.valor/maxF*100), 8);
+      const dados = estagios.map(e=>{ const its=opo.filter(o=>o.estagio===e); return { e, q:its.length, v:its.reduce((s,o)=>s+Number(o.valor||0),0) }; });
+      const max = Math.max(...dados.map(d=>d.v),1);
+      document.getElementById('funil').innerHTML = dados.map((d,i)=>{
+        const larg = Math.max(Math.round(d.v/max*100),8);
         return `<div style="margin-bottom:12px;">
-          <div class="flex-entre" style="font-size:.85rem;margin-bottom:5px;">
-            <strong>${esc(p.estagio)}</strong>
-            <span class="texto-2">${p.qtd} · ${moedaCurta(p.valor)}</span>
-          </div>
-          <div style="height:22px;border-radius:7px;background:var(--cartao-2);overflow:hidden;">
-            <div style="height:100%;width:${larg}%;background:${cores[i]};border-radius:7px;"></div>
-          </div>
+          <div class="flex-entre" style="font-size:.85rem;margin-bottom:5px;"><strong>${d.e}</strong><span class="texto-2">${d.q} · ${moedaCurta(d.v)}</span></div>
+          <div style="height:20px;border-radius:7px;background:var(--cartao-2);overflow:hidden;"><div style="height:100%;width:${larg}%;background:${cores[i]};border-radius:7px;"></div></div>
         </div>`;
       }).join('');
-      const totFunil = porEstagio.filter(p=>p.estagio!=='Fechado').reduce((s,p)=>s+p.valor,0);
-      document.getElementById('funilTotal').textContent = 'Em aberto: ' + moedaCurta(totFunil);
-
-      // ---- Metas por vendedor (barra + status) ----
-      document.getElementById('metas').innerHTML = ven.dados.map(v=>{
-        const p = v.meta ? Math.round(v.realizado/v.meta*100) : 0;
-        const classe = p>=90 ? 'ok' : (p>=70 ? 'atencao' : 'critico');
-        return `<div style="margin-bottom:15px;">
-          <div class="flex-entre" style="margin-bottom:6px;">
-            <span class="celula-nome"><span class="avatar-mini">${iniciais(v.nome)}</span>
-              <span><strong>${esc(v.nome)}</strong><small>${esc(v.cargo||'')}</small></span></span>
-            <span style="font-weight:700;">${p}%</span>
-          </div>
-          <div class="barra"><div class="barra__preenche barra__preenche--${classe}" style="width:${Math.min(p,100)}%"></div></div>
-          <div class="texto-2" style="font-size:.78rem;margin-top:4px;">${moedaCurta(v.realizado)} de ${moedaCurta(v.meta)}</div>
-        </div>`;
-      }).join('');
-
-      // ---- Propostas recentes ----
-      document.getElementById('tabelaPropostas').innerHTML = pro.dados.slice(0,5).map(p=>`
-        <tr>
-          <td class="forte">${esc(p.numero||'—')}</td>
-          <td>${esc(p.cliente)}</td>
-          <td class="num">${moeda(p.valor)}</td>
-          <td><span class="badge badge--${badgeProposta[p.status]||'neutro'}">${esc(p.status)}</span></td>
-        </tr>`).join('');
     }
+
+    // ---- Gráfico de linha com tooltip ----
+    function desenharTendencia(dados) {
+      const W=760,H=260,padL=58,padR=22,padT=18,padB=30;
+      const plotW=W-padL-padR, plotH=H-padT-padB, n=dados.length;
+      if (!n) { document.getElementById('tendencia').innerHTML='<p class="texto-2">Sem dados.</p>'; return; }
+      const maxV = Math.max(...dados.map(d=>Number(d.valor||0)),1);
+      const niceMax = Math.ceil(maxV/100000)*100000 || maxV;
+      const x = i => padL + (n<=1 ? plotW/2 : i/(n-1)*plotW);
+      const y = v => padT + plotH - (v/niceMax)*plotH;
+      const pts = dados.map((d,i)=>({ x:x(i), y:y(Number(d.valor||0)), mes:d.mes, valor:Number(d.valor||0) }));
+
+      const linha = pts.map((p,i)=>`${i?'L':'M'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+      const area = `M${pts[0].x.toFixed(1)} ${(padT+plotH).toFixed(1)} ` +
+        pts.map(p=>`L${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ') +
+        ` L${pts[n-1].x.toFixed(1)} ${(padT+plotH).toFixed(1)} Z`;
+
+      let grid='';
+      for (let g=0; g<=4; g++){ const gv=niceMax*g/4, gy=y(gv);
+        grid += `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W-padR}" y2="${gy.toFixed(1)}" stroke="var(--borda)" stroke-width="1"/>`;
+        grid += `<text x="${padL-8}" y="${(gy+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--texto-3)">${moedaCurta(gv)}</text>`;
+      }
+      const xlab = dados.map((d,i)=>`<text x="${x(i).toFixed(1)}" y="${H-9}" text-anchor="middle" font-size="11" fill="var(--texto-3)">${esc(d.mes)}</text>`).join('');
+      const dots = pts.map((p,i)=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.2" fill="var(--marca-azul)"/>`).join('');
+      const last = pts[n-1];
+
+      document.getElementById('tendencia').innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block;overflow:visible;" id="svgTend">
+          <defs><linearGradient id="fadeAzul" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--marca-azul)" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="var(--marca-azul)" stop-opacity="0"/>
+          </linearGradient></defs>
+          ${grid}
+          <path d="${area}" fill="url(#fadeAzul)"/>
+          <path d="${linha}" fill="none" stroke="var(--marca-azul)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          ${dots}
+          <text x="${last.x.toFixed(1)}" y="${(last.y-10).toFixed(1)}" text-anchor="end" font-size="12" font-weight="700" fill="var(--texto)">${moedaCurta(last.valor)}</text>
+          ${xlab}
+          <line id="cross" x1="0" y1="${padT}" x2="0" y2="${padT+plotH}" stroke="var(--marca-azul)" stroke-width="1" stroke-dasharray="4 3" opacity="0"/>
+          <circle id="crossDot" r="5.5" fill="var(--marca-azul)" stroke="var(--cartao)" stroke-width="2" opacity="0"/>
+          <rect id="hit" x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="transparent" style="cursor:crosshair;"/>
+        </svg>
+        <div class="gr-tip" id="grTip" style="opacity:0"></div>`;
+
+      const svgEl=document.getElementById('svgTend'), hit=document.getElementById('hit');
+      const cross=document.getElementById('cross'), crossDot=document.getElementById('crossDot'), tip=document.getElementById('grTip');
+      const mostrar=(i)=>{ const p=pts[i];
+        cross.setAttribute('x1',p.x); cross.setAttribute('x2',p.x); cross.setAttribute('opacity','1');
+        crossDot.setAttribute('cx',p.x); crossDot.setAttribute('cy',p.y); crossDot.setAttribute('opacity','1');
+        tip.style.opacity='1'; tip.style.left=(p.x/W*100)+'%'; tip.style.top=(p.y/H*100)+'%';
+        tip.innerHTML=`<strong>${esc(p.mes)}</strong><br>${moeda(p.valor)}`;
+      };
+      const esconder=()=>{ cross.setAttribute('opacity','0'); crossDot.setAttribute('opacity','0'); tip.style.opacity='0'; };
+      hit.addEventListener('mousemove',(e)=>{ const r=svgEl.getBoundingClientRect();
+        const fx=(e.clientX-r.left)/r.width*W; let i=Math.round((fx-padL)/plotW*(n-1));
+        mostrar(Math.max(0,Math.min(n-1,i)));
+      });
+      hit.addEventListener('mouseleave', esconder);
+    }
+
+    document.getElementById('periodo').addEventListener('click',(e)=>{
+      const b=e.target.closest('.periodo__btn'); if(b) aplicarPeriodo(Number(b.dataset.n));
+    });
     montar();
   </script>
 </body>

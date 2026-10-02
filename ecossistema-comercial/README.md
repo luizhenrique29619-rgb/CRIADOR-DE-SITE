@@ -68,6 +68,19 @@ ele mostra os dados de exemplo (com um aviso em cada tela).
 
 ---
 
+## 🔗 Fonte de vendas: CV CRM
+
+A parte de **vendas/faturamento** e **clientes/leads** é puxada do **CV CRM**
+(Construtor de Vendas). O front não fala direto com o CV (exporia o token); ele
+fala com uma **ponte** no back-end que guarda o token com segurança.
+
+- Camada no front: `js/cvcrm.js` (só a URL da ponte).
+- Modelo da ponte pronto (Supabase Edge Function ou Vercel Function) e o passo a
+  passo: **`integracoes/cvcrm/README.md`**.
+
+Ordem das fontes de dados: **CV CRM → Supabase → dados de exemplo**. Enquanto a
+ponte não é configurada, o sistema usa o exemplo (com aviso em cada tela).
+
 ## 🌐 Publicar na Vercel
 
 - **Pelo site:** conecte o repositório, em **Root Directory** aponte para

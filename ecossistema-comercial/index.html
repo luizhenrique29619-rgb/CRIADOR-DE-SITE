@@ -44,6 +44,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase.js"></script>
+  <script src="js/cvcrm.js"></script>
   <script src="js/dados-exemplo.js"></script>
   <script src="js/sistema.js"></script>
   <script>
@@ -51,7 +52,7 @@
 
     // ----- KPIs de visão geral (a partir dos dados) -----
     async function montarKPIs() {
-      const { dados: clientes } = await carregarDados('clientes', DADOS.clientes);
+      const { dados: clientes } = await carregarDados('clientes', DADOS.clientes, 'clientes');
       const { dados: oport }    = await carregarDados('oportunidades', DADOS.oportunidades);
       const { dados: props }    = await carregarDados('propostas', DADOS.propostas);
       const { dados: vend }     = await carregarDados('vendedores', DADOS.vendedores);

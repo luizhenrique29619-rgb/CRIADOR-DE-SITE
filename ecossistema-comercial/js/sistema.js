@@ -122,10 +122,19 @@ function atualizarIconeTema(tema) {
   if (btn) btn.textContent = tema === 'escuro' ? '☀️' : '🌙';
 }
 
-/* ---- Carregar dados: tenta Supabase, senão usa exemplos ----
-   Retorna { dados, fonte } onde fonte é 'supabase' ou 'exemplo'.
+/* ---- Carregar dados: tenta CV CRM, depois Supabase, senão exemplos ----
+   Retorna { dados, fonte } onde fonte é 'cvcrm' | 'supabase' | 'exemplo'.
+   cvRecurso (opcional): nome do recurso na ponte do CV CRM ('vendas' | 'clientes').
 */
-async function carregarDados(tabela, exemplos) {
+async function carregarDados(tabela, exemplos, cvRecurso) {
+  // 1) CV CRM (via função-ponte), quando aplicável e configurado
+  if (cvRecurso && window.cvBuscar) {
+    const cv = await window.cvBuscar(cvRecurso);
+    if (Array.isArray(cv) && cv.length) {
+      return { dados: cv, fonte: 'cvcrm' };
+    }
+  }
+  // 2) Supabase
   if (window.supabaseClient) {
     try {
       const { data, error } = await window.supabaseClient.from(tabela).select('*');
@@ -136,16 +145,17 @@ async function carregarDados(tabela, exemplos) {
       console.warn('Falha ao ler do Supabase, usando dados de exemplo:', e);
     }
   }
+  // 3) Dados de exemplo
   return { dados: exemplos || [], fonte: 'exemplo' };
 }
 
-/* Mostra o aviso "dados de exemplo" quando o Supabase ainda não está ligado */
+/* Mostra o aviso "dados de exemplo" só quando NENHUMA fonte real está ligada */
 function avisoFonte(fonte, containerId) {
-  if (fonte === 'supabase') return;
+  if (fonte !== 'exemplo') return;
   const alvo = document.getElementById(containerId);
   if (!alvo) return;
   alvo.insertAdjacentHTML('afterbegin',
-    `<div class="aviso-fonte">⚠️ Exibindo <strong>&nbsp;dados de exemplo</strong>. Configure o Supabase em <code>js/supabase.js</code> para ver os dados reais.</div>`);
+    `<div class="aviso-fonte">⚠️ Exibindo <strong>&nbsp;dados de exemplo</strong>. Ligue o CV CRM (<code>js/cvcrm.js</code>) ou o Supabase (<code>js/supabase.js</code>) para ver os dados reais.</div>`);
 }
 
 /* ---- Formatadores ---- */

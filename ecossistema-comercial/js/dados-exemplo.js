@@ -77,8 +77,14 @@ window.DADOS = {
     { id: 6, titulo: 'Follow-up — Faculdade União',        tipo: 'Follow-up',  data: '2026-10-10', hora: '16:00', responsavel: 'Carla Mendes' },
   ],
 
-  /* ---- Vendas mensais (para o gráfico do dashboard) ---- */
+  /* ---- Vendas mensais (para o gráfico do dashboard) — 12 meses ---- */
   vendas_mensais: [
+    { mes: 'Nov', valor: 460000 },
+    { mes: 'Dez', valor: 520000 },
+    { mes: 'Jan', valor: 410000 },
+    { mes: 'Fev', valor: 445000 },
+    { mes: 'Mar', valor: 500000 },
+    { mes: 'Abr', valor: 530000 },
     { mes: 'Mai', valor: 540000 },
     { mes: 'Jun', valor: 610000 },
     { mes: 'Jul', valor: 580000 },
