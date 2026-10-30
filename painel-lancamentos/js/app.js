@@ -244,6 +244,7 @@ function renderChecklist(){
       <td class="editcell">${statusCtl}</td>
       <td><span class="badge ${al.cls}">${al.txt}</span></td>
       <td class="editcell">${obsCtl}</td>
+      <td class="rowacts">${editavel?`<button class="rowbtn" data-edit="${a.id}" title="Editar tarefa" aria-label="Editar tarefa">✎</button>`:''}${ehAdmin()?`<button class="rowbtn danger" data-del="${a.id}" title="Excluir tarefa" aria-label="Excluir tarefa">✕</button>`:''}</td>
     </tr>`;
   }).join('');
 }
@@ -359,6 +360,81 @@ function modalShare(){
   };
 }
 
+/* ---------- Criar / editar / excluir TAREFA ---------- */
+const PREFIXO_FASE = {1:'FL',2:'BL',3:'PL',4:'LC',5:'MN'};
+function datalistOpcoes(campo){
+  return [...new Set(state.acoes.map(a=>a[campo]).filter(Boolean))].sort()
+    .map(v=>`<option value="${esc(v)}"></option>`).join('');
+}
+function modalTarefa(acao){
+  const novo = !acao; const a = acao || {};
+  const faseAtual = a.fase_num || state.fase;
+  const faseSel = FASES.map(f=>`<option value="${f.num}" ${faseAtual===f.num?'selected':''}>${esc(f.nome)}</option>`).join('');
+  const statusSel = STATUS.map(s=>`<option ${(a.status||'PRONTO PARA INICIAR')===s?'selected':''}>${s}</option>`).join('');
+  abrirModal(`<div class="modal lg"><h3>${novo?'Nova tarefa':'Editar tarefa'}</h3>
+    <p class="hint">${novo?'Cria uma nova ação neste lançamento.':'Altere os dados da ação. Quem editou e quando fica registrado.'}</p>
+    <div class="form-grid">
+      <div class="field wide"><label>Tarefa</label><input id="tTarefa" value="${esc(a.tarefa||'')}" placeholder="Descreva a ação"></div>
+      <div class="field wide"><label>Critério de pronto</label><input id="tCrit" value="${esc(a.criterio_pronto||'')}" placeholder="Quando consideramos concluída"></div>
+      <div class="field"><label>Fase</label><select id="tFase">${faseSel}</select></div>
+      <div class="field"><label>Frente</label><input id="tFrente" list="dlFrente" value="${esc(a.frente||'')}" placeholder="Ex.: Mídia"><datalist id="dlFrente">${datalistOpcoes('frente')}</datalist></div>
+      <div class="field"><label>Setor</label><input id="tSetor" list="dlSetor" value="${esc(a.setor||'')}" placeholder="Ex.: DIGITAL E PERFORMANCE"><datalist id="dlSetor">${datalistOpcoes('setor')}</datalist></div>
+      <div class="field"><label>Responsável</label><input id="tResp" list="dlResp" value="${esc(a.responsavel||'')}" placeholder="Ex.: Marketing"><datalist id="dlResp">${datalistOpcoes('responsavel')}</datalist></div>
+      <div class="field"><label>Apoio</label><input id="tApoio" list="dlApoio" value="${esc(a.apoio||'')}" placeholder="(opcional)"><datalist id="dlApoio">${datalistOpcoes('apoio')}</datalist></div>
+      <div class="field"><label>Prazo sugerido</label><input id="tPrazo" type="date" value="${a.prazo_sugerido||''}"></div>
+      <div class="field"><label>Status</label><select id="tStatus">${statusSel}</select></div>
+    </div>
+    <div class="msg" id="tMsg"></div>
+    <div class="modal-actions"><button class="btn btn-ghost" id="tCancel">Cancelar</button>
+      <button class="btn btn-primary" id="tOk">${novo?'Criar tarefa':'Salvar alterações'}</button></div></div>`);
+  $('#tCancel').onclick = fecharModal;
+  $('#tOk').onclick = async function(){
+    const tarefa = $('#tTarefa').value.trim();
+    if(!tarefa){ $('#tMsg').className='msg err'; $('#tMsg').textContent='Informe a tarefa.'; return; }
+    const faseNum = +$('#tFase').value;
+    const campos = {
+      tarefa,
+      criterio_pronto: $('#tCrit').value.trim() || null,
+      fase: FASES.find(f=>f.num===faseNum).nome,
+      fase_num: faseNum,
+      frente: $('#tFrente').value.trim() || null,
+      setor: $('#tSetor').value.trim() || null,
+      responsavel: $('#tResp').value.trim() || null,
+      apoio: $('#tApoio').value.trim() || null,
+      prazo_sugerido: $('#tPrazo').value || null,
+      status: $('#tStatus').value
+    };
+    this.disabled = true; this.textContent = 'Salvando…';
+    let error;
+    if(novo){
+      const naFase = state.acoes.filter(x=>x.fase_num===faseNum);
+      const maxNum = naFase.reduce((m,x)=>{ const n=parseInt(String(x.codigo||'').split('-')[1],10); return isNaN(n)?m:Math.max(m,n); },0);
+      campos.empreendimento_id = state.emp.id;
+      campos.codigo = (PREFIXO_FASE[faseNum]||'EX') + '-' + String(maxNum+1).padStart(2,'0');
+      campos.ordem = naFase.reduce((m,x)=>Math.max(m,x.ordem||0),0) + 1;
+      const res = await sb.from('acoes').insert(campos).select().single();
+      error = res.error; if(!error && res.data) state.acoes.push(res.data);
+    } else {
+      const res = await sb.from('acoes').update(campos).eq('id', acao.id).select().single();
+      error = res.error; if(!error && res.data){ const i=state.acoes.findIndex(x=>x.id===acao.id); if(i>=0) state.acoes[i]=res.data; }
+    }
+    if(error){
+      $('#tMsg').className='msg err';
+      $('#tMsg').textContent = /row-level|policy|permission/i.test(error.message) ? 'Seu perfil não permite esta ação.' : error.message;
+      this.disabled=false; this.textContent = novo?'Criar tarefa':'Salvar alterações'; return;
+    }
+    fecharModal(); toast(novo?'Tarefa criada ✓':'Tarefa atualizada ✓'); state.fase = faseNum; renderAtual();
+  };
+}
+async function excluirTarefa(id){
+  const a = state.acoes.find(x=>x.id===id); if(!a) return;
+  if(!confirm('Excluir a tarefa "'+a.codigo+' · '+a.tarefa+'"?\n\nEsta ação não pode ser desfeita.')) return;
+  const { error } = await sb.from('acoes').delete().eq('id', id);
+  if(error){ toast(/row-level|policy|permission/i.test(error.message)?'Apenas administradores podem excluir.':'Erro ao excluir.'); return; }
+  const i = state.acoes.findIndex(x=>x.id===id); if(i>=0) state.acoes.splice(i,1);
+  toast('Tarefa excluída'); renderAtual();
+}
+
 /* =========================================================
    EVENTOS
    ========================================================= */
@@ -392,6 +468,11 @@ function wireEvents(){
   const body=$('#acoesBody');
   body.addEventListener('change', e=>{ const el=e.target; if(el.dataset.f==='status'||el.dataset.f==='prazo_real'){ salvarCampo(el.dataset.id, el.dataset.f, el.value); } });
   body.addEventListener('blur', e=>{ const el=e.target; if(el.dataset.f==='observacao'){ const a=state.acoes.find(x=>x.id===el.dataset.id); if(a && (a.observacao||'')!==el.value) salvarCampo(el.dataset.id,'observacao',el.value); } }, true);
+  body.addEventListener('click', e=>{
+    const ed=e.target.closest('[data-edit]'); if(ed){ const a=state.acoes.find(x=>x.id===ed.dataset.edit); if(a) modalTarefa(a); return; }
+    const de=e.target.closest('[data-del]'); if(de){ excluirTarefa(de.dataset.del); }
+  });
+  const bNova=$('#btnNovaTarefa'); if(bNova) bNova.onclick=()=>modalTarefa(null);
   document.addEventListener('keydown', e=>{ if(e.key==='Escape') fecharModal(); });
 }
 

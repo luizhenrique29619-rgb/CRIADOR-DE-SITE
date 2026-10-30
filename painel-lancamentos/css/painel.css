@@ -150,6 +150,13 @@ tbody tr:hover{background:var(--surface-2)}
 .inp-date,.inp-obs{border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12.5px;font-family:inherit;width:100%;color:var(--ink);background:var(--surface)}
 .inp-obs{min-height:30px}
 td.editcell{min-width:120px}
+.rowacts{white-space:nowrap;text-align:right}
+.rowbtn{border:1px solid var(--line);background:var(--surface);color:var(--muted);width:28px;height:28px;border-radius:7px;font-size:13px;line-height:1;margin-left:4px;box-shadow:none}
+.rowbtn:hover{color:var(--ink);border-color:#cdbfb6;transform:none}
+.rowbtn.danger:hover{color:var(--late);border-color:var(--late)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .wide{grid-column:1/-1}
+@media(max-width:560px){.form-grid{grid-template-columns:1fr}}
 
 /* ---------- Modais ---------- */
 .overlay{position:fixed;inset:0;background:rgba(14,27,46,.45);backdrop-filter:blur(2px);z-index:60;display:grid;place-items:center;padding:20px}

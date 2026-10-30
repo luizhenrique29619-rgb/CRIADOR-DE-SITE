@@ -76,11 +76,12 @@
       <select id="fResp"><option value="">Todos os responsáveis</option></select>
       <select id="fStatus"><option value="">Todos os status</option></select>
       <span id="roView" class="badge al-none" style="display:none">Somente leitura</span>
+      <button class="btn btn-sm btn-accent admin-only hidden" id="btnNovaTarefa" style="margin-left:auto">+ Nova tarefa</button>
     </div>
     <div class="tablecard">
       <table class="std checklist-table"><thead><tr>
         <th>Código</th><th>Tarefa</th><th>Setor / Frente</th><th>Responsável</th>
-        <th>Prazo</th><th>Status</th><th>Alerta</th><th>Observação</th>
+        <th>Prazo</th><th>Status</th><th>Alerta</th><th>Observação</th><th></th>
       </tr></thead><tbody id="acoesBody"></tbody></table>
       <div id="acoesEmpty" class="empty hidden">Nenhuma ação encontrada com esses filtros.</div>
     </div>
