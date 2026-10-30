@@ -61,8 +61,9 @@ async function init(){
   state.user = session.user;
 
   // Perfil (papel)
-  const { data:prof } = await sb.from('profiles').select('nome,papel,email').eq('id', state.user.id).single();
+  const { data:prof } = await sb.from('profiles').select('nome,papel,email,is_master').eq('id', state.user.id).single();
   state.papel = (prof && prof.papel) || 'leitor';
+  state.isMaster = !!(prof && prof.is_master);
   const nome = (prof && prof.nome) || state.user.email.split('@')[0];
   $('#uNome').textContent = nome;
   $('#uAvatar').textContent = (nome[0]||'?').toUpperCase();
@@ -307,13 +308,20 @@ async function modalEquipe(){
   if(error){ $('#eqBody').innerHTML='<p class="msg err">'+esc(error.message)+'</p>'; return; }
   $('#eqBody').innerHTML = `<div class="tablecard" style="margin:0"><table class="std"><thead><tr>
     <th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ativo</th></tr></thead><tbody>${
-    data.map(p=>`<tr>
-      <td><b>${esc(p.nome||'—')}</b></td><td class="setor-tag">${esc(p.email||'')}</td>
-      <td><select class="status" data-pid="${p.id}" data-pf="papel" ${p.id===state.user.id?'disabled title="Você não pode mudar o próprio perfil"':''}>
+    data.map(p=>{
+      const souEu = p.id===state.user.id;
+      const masterProtegido = p.is_master && !state.isMaster;
+      const dis = (souEu || masterProtegido) ? 'disabled' : '';
+      const tit = souEu ? ' title="Você não pode mudar o próprio perfil"'
+                : (masterProtegido ? ' title="Conta master protegida"' : '');
+      const masterTag = p.is_master ? ' <span class="badge al-none" title="Conta master">master</span>' : '';
+      return `<tr>
+      <td><b>${esc(p.nome||'—')}</b>${masterTag}</td><td class="setor-tag">${esc(p.email||'')}</td>
+      <td><select class="status" data-pid="${p.id}" data-pf="papel" ${dis}${tit}>
         ${['leitor','editor','admin'].map(r=>`<option value="${r}" ${p.papel===r?'selected':''}>${({leitor:'Visualizador',editor:'Editor',admin:'Administrador'})[r]}</option>`).join('')}</select></td>
-      <td><select class="status" data-pid="${p.id}" data-pf="ativo" ${p.id===state.user.id?'disabled':''}>
+      <td><select class="status" data-pid="${p.id}" data-pf="ativo" ${dis}>
         <option value="true" ${p.ativo?'selected':''}>Sim</option><option value="false" ${!p.ativo?'selected':''}>Não</option></select></td>
-    </tr>`).join('')}</tbody></table></div>`;
+    </tr>`;}).join('')}</tbody></table></div>`;
   $('#eqBody').querySelectorAll('select[data-pid]').forEach(sel=>{
     sel.onchange=async function(){
       const pid=this.dataset.pid, pf=this.dataset.pf;
