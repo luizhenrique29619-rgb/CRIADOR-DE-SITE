@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apresentação · Painel de Lançamento · Record</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/painel.css">
+</head>
+<body>
+<div class="pres-header">
+  <div class="wrap">
+    <div class="brand" style="color:#fff"><span class="mark">R</span>
+      <div>RECORD<small>Checklist de Lançamento</small></div>
+    </div>
+    <div style="margin-left:4px">
+      <h1 id="pNome">—</h1>
+      <div class="meta" id="pMeta"></div>
+    </div>
+    <span class="pres-tag">Apresentação · somente leitura</span>
+  </div>
+</div>
+
+<main class="wrap">
+  <div id="pLoading" class="loading">Carregando painel…</div>
+  <div id="pErro" class="empty hidden">
+    <h3>Link indisponível</h3>
+    <p>Este link de apresentação não está ativo ou foi desativado pelo administrador.</p>
+  </div>
+  <div id="pContent" class="hidden">
+    <div class="kpis" id="pKpis"></div>
+    <div class="card">
+      <h3>Progresso geral</h3><p class="hint" id="pProgHint"></p>
+      <div class="progress" id="pProg"></div>
+      <div class="legend">
+        <span><i style="background:var(--ok)"></i>Concluído</span>
+        <span><i style="background:var(--run)"></i>Em andamento</span>
+        <span><i style="background:var(--late)"></i>Atrasado / vencido</span>
+        <span><i style="background:var(--idle-soft)"></i>A iniciar / pendente</span>
+      </div>
+    </div>
+    <div class="tablecard">
+      <table class="std"><thead><tr><th>#</th><th>Fase</th><th>Janela</th>
+        <th class="num">Ações</th><th class="num">Concluídas</th><th class="num">Atrasadas</th>
+        <th style="width:190px">% Concluído</th></tr></thead><tbody id="pFases"></tbody></table>
+    </div>
+    <div id="pFasesDetalhe"></div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/apresentacao.js"></script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar · Painel de Lançamentos · Record</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/painel.css">
+</head>
+<body>
+<div class="auth-screen">
+  <div class="auth-card">
+    <div class="brand"><span class="mark">R</span>
+      <div>RECORD<small>Painel de Lançamentos</small></div>
+    </div>
+    <h1 id="title">Entrar</h1>
+    <p class="sub" id="subtitle">Acesso do time comercial</p>
+
+    <form id="form">
+      <div class="field" id="nameField" style="display:none">
+        <label for="nome">Seu nome</label>
+        <input id="nome" type="text" autocomplete="name" placeholder="Ex.: Ana Souza">
+      </div>
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" autocomplete="email" required placeholder="voce@empresa.com">
+      </div>
+      <div class="field">
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" autocomplete="current-password" required placeholder="••••••••" minlength="6">
+      </div>
+      <button class="btn btn-primary" id="submit" type="submit">Entrar</button>
+      <div class="msg" id="msg"></div>
+    </form>
+
+    <p class="auth-switch" id="switch">
+      Primeiro acesso? <a id="toggle">Criar minha conta</a>
+    </p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script>
+(function(){
+  const sb = window.sb;
+  const form = document.getElementById('form');
+  const msg = document.getElementById('msg');
+  const btn = document.getElementById('submit');
+  let modo = 'login'; // 'login' | 'signup'
+
+  function show(type, text){ msg.className = 'msg ' + type; msg.textContent = text; }
+
+  // Já logado? vai direto pro app.
+  if (sb) sb.auth.getSession().then(({data})=>{ if(data.session) location.replace('app.html'); });
+
+  document.getElementById('toggle').onclick = function(){
+    modo = (modo === 'login') ? 'signup' : 'login';
+    const signup = modo === 'signup';
+    document.getElementById('title').textContent = signup ? 'Criar conta' : 'Entrar';
+    document.getElementById('subtitle').textContent = signup ? 'Cadastre seu acesso ao painel' : 'Acesso do time comercial';
+    document.getElementById('nameField').style.display = signup ? 'block' : 'none';
+    document.getElementById('senha').autocomplete = signup ? 'new-password' : 'current-password';
+    btn.textContent = signup ? 'Criar conta' : 'Entrar';
+    document.getElementById('switch').innerHTML = signup
+      ? 'Já tem conta? <a id="toggle">Entrar</a>'
+      : 'Primeiro acesso? <a id="toggle">Criar minha conta</a>';
+    document.getElementById('toggle').onclick = arguments.callee;
+    msg.className = 'msg';
+  };
+
+  form.onsubmit = async function(e){
+    e.preventDefault();
+    if(!sb){ show('err','Configuração do Supabase ausente.'); return; }
+    const email = document.getElementById('email').value.trim();
+    const senha = document.getElementById('senha').value;
+    const nome  = document.getElementById('nome').value.trim();
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = modo === 'signup' ? 'Criando...' : 'Entrando...';
+    try{
+      if(modo === 'signup'){
+        const { data, error } = await sb.auth.signUp({
+          email, password: senha,
+          options:{ data:{ nome: nome || email.split('@')[0] } }
+        });
+        if(error) throw error;
+        if(data.session){ location.replace('app.html'); return; }
+        show('ok','Conta criada! Se pedir confirmação, verifique seu e-mail e depois entre.');
+      }else{
+        const { error } = await sb.auth.signInWithPassword({ email, password: senha });
+        if(error) throw error;
+        location.replace('app.html');
+      }
+    }catch(err){
+      const m = (err && err.message) || 'Erro ao autenticar.';
+      show('err', /Invalid login/i.test(m) ? 'E-mail ou senha incorretos.'
+        : /already registered/i.test(m) ? 'Este e-mail já tem conta. Tente entrar.'
+        : m);
+    }finally{ btn.disabled=false; btn.textContent=original; }
+  };
+})();
+</script>
+</body>
+</html>

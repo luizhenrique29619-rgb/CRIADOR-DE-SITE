@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de Lançamentos · Record</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/painel.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="mark">R</span>
+    <div>RECORD<small>Painel de Lançamentos</small></div>
+  </div>
+  <select id="empSelect" class="selbox sel" title="Empreendimento"></select>
+  <div class="spacer"></div>
+  <button class="btn btn-sm btn-accent admin-only hidden" id="btnNovo">+ Novo lançamento</button>
+  <button class="btn btn-sm admin-only hidden" id="btnEquipe">Equipe</button>
+  <button class="btn btn-sm admin-only hidden" id="btnShare">Compartilhar</button>
+  <div class="usermenu">
+    <div class="usermeta"><b id="uNome">—</b><br><span class="pill-role" id="uRole">—</span></div>
+    <div class="avatar" id="uAvatar">–</div>
+    <button class="btn btn-sm btn-ghost" id="btnSair" style="color:#fff">Sair</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-view="painel">Painel</button>
+    <button class="tab" data-view="checklist">Checklist</button>
+  </div>
+
+  <div id="viewLoading" class="loading">Carregando…</div>
+
+  <!-- ============ PAINEL ============ -->
+  <section id="viewPainel" class="hidden">
+    <div class="kpis" id="kpis"></div>
+    <div class="card">
+      <h3>Progresso geral do lançamento</h3>
+      <p class="hint" id="progHint"></p>
+      <div class="progress" id="progBar"></div>
+      <div class="legend">
+        <span><i style="background:var(--ok)"></i>Concluído</span>
+        <span><i style="background:var(--run)"></i>Em andamento</span>
+        <span><i style="background:var(--late)"></i>Atrasado / vencido</span>
+        <span><i style="background:var(--idle-soft)"></i>A iniciar / pendente</span>
+      </div>
+    </div>
+    <div class="tablecard">
+      <table class="std"><thead><tr>
+        <th>#</th><th>Fase</th><th>Janela</th><th class="num">Ações</th>
+        <th class="num">Concluídas</th><th class="num">Andamento</th><th class="num">Atrasadas</th>
+        <th style="width:190px">% Concluído</th>
+      </tr></thead><tbody id="fasesBody"></tbody></table>
+    </div>
+    <div class="tablecard">
+      <table class="std"><thead><tr>
+        <th>Setor</th><th class="num">Ações</th><th class="num">Concluídas</th>
+        <th class="num">Atrasadas</th><th style="width:190px">% Concluído</th>
+      </tr></thead><tbody id="setoresBody"></tbody></table>
+    </div>
+  </section>
+
+  <!-- ============ CHECKLIST ============ -->
+  <section id="viewChecklist" class="hidden">
+    <div class="subtabs" id="faseTabs"></div>
+    <div class="toolbar">
+      <input type="search" id="busca" placeholder="Buscar tarefa, código, responsável…">
+      <select id="fSetor"><option value="">Todos os setores</option></select>
+      <select id="fResp"><option value="">Todos os responsáveis</option></select>
+      <select id="fStatus"><option value="">Todos os status</option></select>
+      <span id="roView" class="badge al-none" style="display:none">Somente leitura</span>
+    </div>
+    <div class="tablecard">
+      <table class="std checklist-table"><thead><tr>
+        <th>Código</th><th>Tarefa</th><th>Setor / Frente</th><th>Responsável</th>
+        <th>Prazo</th><th>Status</th><th>Alerta</th><th>Observação</th>
+      </tr></thead><tbody id="acoesBody"></tbody></table>
+      <div id="acoesEmpty" class="empty hidden">Nenhuma ação encontrada com esses filtros.</div>
+    </div>
+  </section>
+</main>
+
+<div id="modalRoot"></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

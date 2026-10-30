@@ -1,0 +1,380 @@
+/* =========================================================
+   PAINEL DE LANÇAMENTOS · app.js
+   Sessão, painel (KPIs), checklist editável e telas de admin.
+   Segurança real: quem pode editar é decidido pelo banco (RLS).
+   A interface só esconde o que o perfil não pode fazer.
+   ========================================================= */
+(function(){
+"use strict";
+const sb = window.sb;
+
+/* ---------- Metadados ---------- */
+const FASES = [
+  {num:1, nome:'FUTURO LANÇAMENTO', curto:'Futuro',  janela:'D-10 a D-5'},
+  {num:2, nome:'BREVE LANÇAMENTO',  curto:'Breve',   janela:'D-4 a D-3'},
+  {num:3, nome:'PRÉ-LANÇAMENTO',    curto:'Pré',     janela:'D-2 a D-1'},
+  {num:4, nome:'LANÇAMENTO',        curto:'Lançamento', janela:'D0 a D+1'},
+  {num:5, nome:'MANUTENÇÃO',        curto:'Manutenção', janela:'D+1 em diante'},
+];
+const STATUS = ['PRONTO PARA INICIAR','EM ANDAMENTO','CONCLUÍDO','PENDENTE','ATRASADO','NÃO SE APLICA'];
+const ST_CLASS = {'PRONTO PARA INICIAR':'st-pronto','EM ANDAMENTO':'st-andamento','CONCLUÍDO':'st-concluido','PENDENTE':'st-pendente','ATRASADO':'st-atrasado','NÃO SE APLICA':'st-na'};
+
+/* ---------- Estado ---------- */
+const state = { user:null, papel:'leitor', emps:[], emp:null, acoes:[], fase:1, channel:null };
+
+/* ---------- Utils ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hoje = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
+function parseDate(s){ if(!s) return null; const d=new Date(s+'T00:00:00'); return isNaN(d)?null:d; }
+function fmtDate(s){ const d=parseDate(s); return d? d.toLocaleDateString('pt-BR') : '—'; }
+function podeEditar(){ return state.papel==='admin' || state.papel==='editor'; }
+function ehAdmin(){ return state.papel==='admin'; }
+let toastT;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* Alerta derivado de status + prazo (real tem prioridade sobre o sugerido) */
+function alerta(a){
+  if(a.status==='CONCLUÍDO') return {cls:'al-ok', txt:'Concluído'};
+  if(a.status==='NÃO SE APLICA') return {cls:'al-none', txt:'N/A'};
+  const d = parseDate(a.prazo_real || a.prazo_sugerido);
+  if(!d) return {cls:'al-none', txt:'—'};
+  const dias = Math.round((d - hoje())/86400000);
+  if(dias < 0)  return {cls:'al-late', txt:'Vencida há '+Math.abs(dias)+'d'};
+  if(dias <= 3) return {cls:'al-warn', txt:'Vence em '+dias+'d'};
+  return {cls:'al-ok', txt:'No prazo'};
+}
+function estaAtrasada(a){
+  if(a.status==='CONCLUÍDO'||a.status==='NÃO SE APLICA') return false;
+  if(a.status==='ATRASADO') return true;
+  const d = parseDate(a.prazo_real || a.prazo_sugerido);
+  return d ? d < hoje() : false;
+}
+
+/* =========================================================
+   INICIALIZAÇÃO
+   ========================================================= */
+async function init(){
+  if(!sb){ alert('Configuração do Supabase ausente (js/config.js).'); return; }
+  const { data:{session} } = await sb.auth.getSession();
+  if(!session){ location.replace('index.html'); return; }
+  state.user = session.user;
+
+  // Perfil (papel)
+  const { data:prof } = await sb.from('profiles').select('nome,papel,email').eq('id', state.user.id).single();
+  state.papel = (prof && prof.papel) || 'leitor';
+  const nome = (prof && prof.nome) || state.user.email.split('@')[0];
+  $('#uNome').textContent = nome;
+  $('#uAvatar').textContent = (nome[0]||'?').toUpperCase();
+  $('#uRole').textContent = {admin:'Administrador',editor:'Editor',leitor:'Visualizador'}[state.papel];
+  if(ehAdmin()) document.querySelectorAll('.admin-only').forEach(e=>e.classList.remove('hidden'));
+  if(!podeEditar()) $('#roView').style.display='inline-block';
+
+  wireEvents();
+  await carregarEmpreendimentos();
+}
+
+async function carregarEmpreendimentos(){
+  const { data, error } = await sb.from('empreendimentos').select('*').order('criado_em',{ascending:false});
+  if(error){ console.error(error); }
+  state.emps = data || [];
+  const sel = $('#empSelect');
+  if(!state.emps.length){
+    sel.innerHTML = '<option>Nenhum lançamento ainda</option>';
+    $('#viewLoading').textContent = ehAdmin()
+      ? 'Nenhum lançamento cadastrado. Clique em “+ Novo lançamento” para começar.'
+      : 'Nenhum lançamento cadastrado ainda. Peça a um administrador para criar o primeiro.';
+    return;
+  }
+  sel.innerHTML = state.emps.map(e=>`<option value="${e.id}">${esc(e.nome)}${e.praca?' · '+esc(e.praca):''}</option>`).join('');
+  const salvo = localStorage.getItem('emp_atual');
+  const alvo = state.emps.find(e=>e.id===salvo) || state.emps[0];
+  sel.value = alvo.id;
+  await selecionarEmp(alvo.id);
+}
+
+async function selecionarEmp(id){
+  state.emp = state.emps.find(e=>e.id===id);
+  localStorage.setItem('emp_atual', id);
+  await carregarAcoes();
+  assinarRealtime(id);
+}
+
+async function carregarAcoes(){
+  const { data, error } = await sb.from('acoes').select('*')
+    .eq('empreendimento_id', state.emp.id).order('fase_num').order('ordem');
+  if(error){ console.error(error); toast('Erro ao carregar ações'); return; }
+  state.acoes = data || [];
+  $('#viewLoading').classList.add('hidden');
+  renderAtual();
+  mostrarVista();           // revela a aba ativa (Painel por padrão)
+}
+
+/* Mostra a seção da aba ativa e esconde a outra */
+function mostrarVista(){
+  const v = document.querySelector('.tab.active').dataset.view;
+  $('#viewPainel').classList.toggle('hidden', v!=='painel');
+  $('#viewChecklist').classList.toggle('hidden', v!=='checklist');
+}
+
+/* Tempo real: mudou uma ação deste lançamento → recarrega e re-renderiza */
+function assinarRealtime(empId){
+  if(state.channel){ sb.removeChannel(state.channel); state.channel=null; }
+  state.channel = sb.channel('acoes-'+empId)
+    .on('postgres_changes', {event:'*', schema:'public', table:'acoes', filter:'empreendimento_id=eq.'+empId},
+      (payload)=>{
+        const row = payload.new || payload.old; if(!row) return;
+        const i = state.acoes.findIndex(a=>a.id===row.id);
+        if(payload.eventType==='DELETE'){ if(i>=0) state.acoes.splice(i,1); }
+        else if(i>=0){ state.acoes[i]=payload.new; } else { state.acoes.push(payload.new); }
+        // Re-renderiza o painel sempre; a tabela só se ninguém estiver digitando nela.
+        renderPainel();
+        if(!document.activeElement || !$('#acoesBody').contains(document.activeElement)) renderChecklist();
+      }).subscribe();
+}
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+function vistaAtual(){ return document.querySelector('.tab.active').dataset.view; }
+function renderAtual(){ renderPainel(); renderChecklist(); }
+
+function agregados(){
+  const total=state.acoes.length;
+  let concl=0, andam=0, atras=0, na=0;
+  state.acoes.forEach(a=>{
+    if(a.status==='CONCLUÍDO') concl++;
+    else if(a.status==='EM ANDAMENTO') andam++;
+    else if(a.status==='NÃO SE APLICA') na++;
+    if(estaAtrasada(a)) atras++;
+  });
+  const efet = Math.max(1, total - na);
+  return {total, concl, andam, atras, na, pct: Math.round(concl/efet*100)};
+}
+
+function renderPainel(){
+  if(!state.emp) return;
+  const g = agregados();
+  $('#kpis').innerHTML = `
+    <div class="kpi accent"><div class="lbl">% Geral concluído</div><div class="val">${g.pct}%</div><div class="sub">D0: ${fmtDate(state.emp.data_d0)}</div></div>
+    <div class="kpi"><div class="lbl">Total de ações</div><div class="val">${g.total}</div><div class="sub">${state.emp.consultoria||''}</div></div>
+    <div class="kpi"><div class="lbl">Concluídas</div><div class="val ok">${g.concl}</div></div>
+    <div class="kpi"><div class="lbl">Em andamento</div><div class="val run">${g.andam}</div></div>
+    <div class="kpi"><div class="lbl">Atrasadas / vencidas</div><div class="val late">${g.atras}</div></div>`;
+
+  const efet = Math.max(1, g.total - g.na);
+  const pOk=g.concl/efet*100, pRun=g.andam/efet*100, pLate=g.atras/efet*100;
+  $('#progBar').innerHTML =
+    `<span class="s-ok" style="width:${pOk}%"></span><span class="s-run" style="width:${pRun}%"></span><span class="s-late" style="width:${pLate}%"></span>`;
+  $('#progHint').textContent = `${g.concl} de ${g.total} ações concluídas · ${g.andam} em andamento · ${g.atras} atrasadas`;
+
+  // Por fase
+  $('#fasesBody').innerHTML = FASES.map(f=>{
+    const itens = state.acoes.filter(a=>a.fase_num===f.num);
+    const t=itens.length, c=itens.filter(a=>a.status==='CONCLUÍDO').length,
+          an=itens.filter(a=>a.status==='EM ANDAMENTO').length, at=itens.filter(estaAtrasada).length,
+          na=itens.filter(a=>a.status==='NÃO SE APLICA').length;
+    const pct=t?Math.round(c/Math.max(1,t-na)*100):0;
+    return `<tr><td class="code">${f.num}</td><td><b>${esc(f.nome)}</b></td><td class="setor-tag">${f.janela}</td>
+      <td class="num">${t}</td><td class="num">${c}</td><td class="num">${an}</td><td class="num">${at}</td>
+      <td><b>${pct}%</b><div class="mini-bar"><span style="width:${pct}%"></span></div></td></tr>`;
+  }).join('');
+
+  // Por setor
+  const setores={};
+  state.acoes.forEach(a=>{ const s=a.setor||'—'; (setores[s]=setores[s]||[]).push(a); });
+  $('#setoresBody').innerHTML = Object.keys(setores).sort().map(s=>{
+    const itens=setores[s], t=itens.length, c=itens.filter(a=>a.status==='CONCLUÍDO').length,
+          at=itens.filter(estaAtrasada).length, na=itens.filter(a=>a.status==='NÃO SE APLICA').length;
+    const pct=Math.round(c/Math.max(1,t-na)*100);
+    return `<tr><td>${esc(s)}</td><td class="num">${t}</td><td class="num">${c}</td><td class="num">${at}</td>
+      <td><b>${pct}%</b><div class="mini-bar"><span style="width:${pct}%"></span></div></td></tr>`;
+  }).join('');
+}
+
+function renderChecklist(){
+  if(!state.emp) return;
+  // Abas de fase
+  $('#faseTabs').innerHTML = FASES.map(f=>{
+    const n=state.acoes.filter(a=>a.fase_num===f.num).length;
+    return `<button class="subtab ${f.num===state.fase?'active':''}" data-fase="${f.num}">${esc(f.curto)} <b>${n}</b></button>`;
+  }).join('');
+
+  // Preenche filtros (setor/responsável) uma vez por carga
+  const setSel=$('#fSetor'), respSel=$('#fResp');
+  if(setSel.options.length<=1){
+    const setores=[...new Set(state.acoes.map(a=>a.setor).filter(Boolean))].sort();
+    setSel.innerHTML='<option value="">Todos os setores</option>'+setores.map(s=>`<option>${esc(s)}</option>`).join('');
+    const resps=[...new Set(state.acoes.map(a=>a.responsavel).filter(Boolean))].sort();
+    respSel.innerHTML='<option value="">Todos os responsáveis</option>'+resps.map(s=>`<option>${esc(s)}</option>`).join('');
+    $('#fStatus').innerHTML='<option value="">Todos os status</option>'+STATUS.map(s=>`<option>${esc(s)}</option>`).join('');
+  }
+
+  const q=$('#busca').value.trim().toLowerCase();
+  const fs=setSel.value, fr=respSel.value, fst=$('#fStatus').value;
+  const editavel=podeEditar();
+
+  const linhas = state.acoes.filter(a=>a.fase_num===state.fase).filter(a=>{
+    if(fs && a.setor!==fs) return false;
+    if(fr && a.responsavel!==fr) return false;
+    if(fst && a.status!==fst) return false;
+    if(q){ const blob=(a.codigo+' '+a.tarefa+' '+(a.responsavel||'')+' '+(a.setor||'')+' '+(a.frente||'')).toLowerCase(); if(!blob.includes(q)) return false; }
+    return true;
+  });
+
+  $('#acoesEmpty').classList.toggle('hidden', linhas.length>0);
+  $('#acoesBody').innerHTML = linhas.map(a=>{
+    const al=alerta(a);
+    const statusCtl = editavel
+      ? `<select class="status ${ST_CLASS[a.status]}" data-id="${a.id}" data-f="status">${STATUS.map(s=>`<option ${s===a.status?'selected':''}>${s}</option>`).join('')}</select>`
+      : `<span class="status ${ST_CLASS[a.status]}">${esc(a.status)}</span>`;
+    const prazoCtl = editavel
+      ? `<input type="date" class="inp-date" data-id="${a.id}" data-f="prazo_real" value="${a.prazo_real||''}" title="Prazo real">`
+      : (a.prazo_real?fmtDate(a.prazo_real):'—');
+    const obsCtl = editavel
+      ? `<input class="inp-obs" data-id="${a.id}" data-f="observacao" value="${esc(a.observacao||'')}" placeholder="—">`
+      : esc(a.observacao||'—');
+    return `<tr data-row="${a.id}">
+      <td class="code">${esc(a.codigo)}</td>
+      <td class="tarefa"><b>${esc(a.tarefa)}</b><small>${esc(a.criterio_pronto||'')}</small></td>
+      <td><span>${esc(a.setor||'')}</span><br><span class="setor-tag">${esc(a.frente||'')}</span></td>
+      <td>${esc(a.responsavel||'—')}${a.apoio?'<br><span class="setor-tag">apoio: '+esc(a.apoio)+'</span>':''}</td>
+      <td class="editcell"><span class="setor-tag">sug.: ${fmtDate(a.prazo_sugerido)}</span><br>${prazoCtl}</td>
+      <td class="editcell">${statusCtl}</td>
+      <td><span class="badge ${al.cls}">${al.txt}</span></td>
+      <td class="editcell">${obsCtl}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* =========================================================
+   EDIÇÃO (salva no banco; RLS garante a permissão)
+   ========================================================= */
+async function salvarCampo(id, campo, valor){
+  const patch={}; patch[campo]= (valor===''?null:valor);
+  const a = state.acoes.find(x=>x.id===id);
+  const anterior = a ? a[campo] : null;
+  if(a){ a[campo]=patch[campo]; if(campo==='status') renderPainel(); }  // otimista
+  const { error } = await sb.from('acoes').update(patch).eq('id', id);
+  if(error){
+    if(a){ a[campo]=anterior; }
+    toast(/row-level|permission|policy/i.test(error.message) ? 'Seu perfil não permite editar.' : 'Erro ao salvar.');
+    renderChecklist();
+  } else {
+    toast('Salvo ✓');
+    if(campo==='status'){ renderPainel(); renderChecklist(); }
+  }
+}
+
+/* =========================================================
+   MODAIS
+   ========================================================= */
+function fecharModal(){ $('#modalRoot').innerHTML=''; }
+function abrirModal(html){ $('#modalRoot').innerHTML = `<div class="overlay" id="ov">${html}</div>`;
+  $('#ov').addEventListener('click', e=>{ if(e.target.id==='ov') fecharModal(); }); }
+
+function modalNovo(){
+  const hoje=new Date().toISOString().slice(0,10);
+  abrirModal(`<div class="modal"><h3>Novo lançamento</h3>
+    <p class="hint">As 259 ações-modelo serão criadas automaticamente, com os prazos calculados pela data do lançamento (D0).</p>
+    <div class="field"><label>Nome do empreendimento</label><input id="mNome" placeholder="Ex.: Residencial Orla Nobre"></div>
+    <div class="field"><label>Praça / cidade</label><input id="mPraca" placeholder="Ex.: Maceió / AL"></div>
+    <div class="field"><label>Consultoria</label><input id="mCons" value="VMV Group"></div>
+    <div class="field"><label>Data-alvo do lançamento (D0)</label><input id="mD0" type="date" value="${hoje}"></div>
+    <div class="msg" id="mMsg"></div>
+    <div class="modal-actions"><button class="btn btn-ghost" id="mCancel">Cancelar</button>
+      <button class="btn btn-primary" id="mOk">Criar lançamento</button></div></div>`);
+  $('#mCancel').onclick=fecharModal;
+  $('#mOk').onclick=async function(){
+    const nome=$('#mNome').value.trim(); const d0=$('#mD0').value;
+    if(!nome||!d0){ $('#mMsg').className='msg err'; $('#mMsg').textContent='Informe nome e data do lançamento.'; return; }
+    this.disabled=true; this.textContent='Criando…';
+    const { data, error } = await sb.rpc('criar_empreendimento',
+      { p_nome:nome, p_praca:$('#mPraca').value.trim(), p_consultoria:$('#mCons').value.trim(), p_data_d0:d0 });
+    if(error){ $('#mMsg').className='msg err'; $('#mMsg').textContent=error.message; this.disabled=false; this.textContent='Criar lançamento'; return; }
+    fecharModal(); toast('Lançamento criado ✓');
+    await carregarEmpreendimentos(); $('#empSelect').value=data; await selecionarEmp(data);
+  };
+}
+
+async function modalEquipe(){
+  abrirModal(`<div class="modal lg"><h3>Equipe e perfis</h3>
+    <p class="hint">Defina o que cada pessoa pode fazer. <b>Administrador</b>: gerencia tudo. <b>Editor</b>: edita o checklist. <b>Visualizador</b>: só acompanha.</p>
+    <div id="eqBody" class="loading">Carregando…</div>
+    <div class="modal-actions"><button class="btn btn-ghost" id="eqClose">Fechar</button></div></div>`);
+  $('#eqClose').onclick=fecharModal;
+  const { data, error } = await sb.from('profiles').select('*').order('papel').order('nome');
+  if(error){ $('#eqBody').innerHTML='<p class="msg err">'+esc(error.message)+'</p>'; return; }
+  $('#eqBody').innerHTML = `<div class="tablecard" style="margin:0"><table class="std"><thead><tr>
+    <th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ativo</th></tr></thead><tbody>${
+    data.map(p=>`<tr>
+      <td><b>${esc(p.nome||'—')}</b></td><td class="setor-tag">${esc(p.email||'')}</td>
+      <td><select class="status" data-pid="${p.id}" data-pf="papel" ${p.id===state.user.id?'disabled title="Você não pode mudar o próprio perfil"':''}>
+        ${['leitor','editor','admin'].map(r=>`<option value="${r}" ${p.papel===r?'selected':''}>${({leitor:'Visualizador',editor:'Editor',admin:'Administrador'})[r]}</option>`).join('')}</select></td>
+      <td><select class="status" data-pid="${p.id}" data-pf="ativo" ${p.id===state.user.id?'disabled':''}>
+        <option value="true" ${p.ativo?'selected':''}>Sim</option><option value="false" ${!p.ativo?'selected':''}>Não</option></select></td>
+    </tr>`).join('')}</tbody></table></div>`;
+  $('#eqBody').querySelectorAll('select[data-pid]').forEach(sel=>{
+    sel.onchange=async function(){
+      const pid=this.dataset.pid, pf=this.dataset.pf;
+      let val = pf==='ativo' ? (this.value==='true') : this.value;
+      const { error } = await sb.from('profiles').update({[pf]:val}).eq('id',pid);
+      toast(error ? 'Erro ao salvar' : 'Perfil atualizado ✓');
+    };
+  });
+}
+
+function modalShare(){
+  if(!state.emp){ return; }
+  const e=state.emp;
+  const link = new URL('apresentacao.html', location.href).href + '?token=' + e.share_slug;
+  abrirModal(`<div class="modal"><h3>Compartilhar apresentação</h3>
+    <p class="hint">Gere um link <b>somente leitura</b> do painel de <b>${esc(e.nome)}</b> para apresentar a quem não faz parte do time. Ninguém consegue editar por esse link.</p>
+    <div class="field"><label>Modo apresentação</label>
+      <select id="shToggle" class="status" style="width:100%;padding:10px">
+        <option value="true" ${e.compartilhado?'selected':''}>Ativado — link funciona</option>
+        <option value="false" ${!e.compartilhado?'selected':''}>Desativado — link bloqueado</option>
+      </select></div>
+    <div class="field" id="shLinkWrap" style="${e.compartilhado?'':'display:none'}">
+      <label>Link de apresentação</label>
+      <div class="link-share"><input id="shLink" readonly value="${esc(link)}">
+        <button class="btn btn-sm" id="shCopy">Copiar</button></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" id="shClose">Fechar</button></div></div>`);
+  $('#shClose').onclick=fecharModal;
+  $('#shCopy').onclick=()=>{ $('#shLink').select(); navigator.clipboard.writeText(link).then(()=>toast('Link copiado ✓')); };
+  $('#shToggle').onchange=async function(){
+    const val=this.value==='true';
+    const { error } = await sb.from('empreendimentos').update({compartilhado:val}).eq('id',e.id);
+    if(error){ toast('Erro: '+error.message); return; }
+    e.compartilhado=val; $('#shLinkWrap').style.display=val?'block':'none'; toast('Atualizado ✓');
+  };
+}
+
+/* =========================================================
+   EVENTOS
+   ========================================================= */
+function wireEvents(){
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    $('#viewPainel').classList.toggle('hidden', t.dataset.view!=='painel');
+    $('#viewChecklist').classList.toggle('hidden', t.dataset.view!=='checklist');
+  });
+  $('#empSelect').onchange = e => selecionarEmp(e.target.value);
+  $('#btnSair').onclick = async()=>{ await sb.auth.signOut(); location.replace('index.html'); };
+  $('#btnNovo').onclick = modalNovo;
+  $('#btnEquipe').onclick = modalEquipe;
+  $('#btnShare').onclick = modalShare;
+
+  // Delegação: abas de fase + edição de células
+  $('#faseTabs').addEventListener('click', e=>{ const b=e.target.closest('.subtab'); if(b){ state.fase=+b.dataset.fase; renderChecklist(); } });
+  ['busca','fSetor','fResp','fStatus'].forEach(id=>{ const el=$('#'+id); el.addEventListener('input',renderChecklist); el.addEventListener('change',renderChecklist); });
+  const body=$('#acoesBody');
+  body.addEventListener('change', e=>{ const el=e.target; if(el.dataset.f==='status'||el.dataset.f==='prazo_real'){ salvarCampo(el.dataset.id, el.dataset.f, el.value); } });
+  body.addEventListener('blur', e=>{ const el=e.target; if(el.dataset.f==='observacao'){ const a=state.acoes.find(x=>x.id===el.dataset.id); if(a && (a.observacao||'')!==el.value) salvarCampo(el.dataset.id,'observacao',el.value); } }, true);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') fecharModal(); });
+}
+
+init();
+})();
