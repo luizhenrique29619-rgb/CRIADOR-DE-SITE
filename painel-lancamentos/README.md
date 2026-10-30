@@ -52,10 +52,11 @@ Projeto: `painel-comercial-record`. Tabelas: `profiles`, `empreendimentos`,
 `playbook_acoes` (259 ações-modelo) e `acoes` (o checklist de cada
 lançamento). As datas usam o campo `marco` (meses em relação ao D0).
 
-### Liberar acesso sem confirmação de e-mail (opcional)
-Para o time entrar na hora, no painel do Supabase vá em **Authentication →
-Providers → Email** e desligue **"Confirm email"**. Com isso, criar conta já
-dá acesso imediato.
+### Acesso imediato (sem confirmação de e-mail)
+Criar conta já dá acesso na hora, sem precisar confirmar nada por e-mail.
+Isso é garantido por um gatilho no banco (`auto_confirmar_email`) que marca
+todo novo usuário como confirmado, e o login entra automaticamente logo após
+o cadastro.
 
 ## 🌐 Publicação (Vercel)
 

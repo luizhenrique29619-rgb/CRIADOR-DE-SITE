@@ -90,7 +90,10 @@
         });
         if(error) throw error;
         if(data.session){ location.replace('app.html'); return; }
-        show('ok','Conta criada! Se pedir confirmação, verifique seu e-mail e depois entre.');
+        // A conta já nasce confirmada (sem e-mail): entra direto.
+        const { error:e2 } = await sb.auth.signInWithPassword({ email, password: senha });
+        if(!e2){ location.replace('app.html'); return; }
+        show('ok','Conta criada! Já pode entrar com seu e-mail e senha.');
       }else{
         const { error } = await sb.auth.signInWithPassword({ email, password: senha });
         if(error) throw error;
