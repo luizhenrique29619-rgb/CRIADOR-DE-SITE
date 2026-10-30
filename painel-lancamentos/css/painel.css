@@ -38,6 +38,8 @@ body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1
 a{color:inherit}
 h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:-.01em}
 button{font-family:inherit;cursor:pointer}
+input,select,textarea{color:var(--ink)}
+input::placeholder{color:var(--muted);opacity:1}
 .hidden{display:none !important}
 
 /* ---------- Botões ---------- */
@@ -157,7 +159,7 @@ td.editcell{min-width:120px}
 .modal .hint{font-size:13px;color:var(--muted);margin-bottom:18px}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:6px}
-.field input,.field select{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink)}
+.field input,.field select{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--surface-2)}
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
 .link-share{display:flex;gap:8px;margin-top:8px}
 .link-share input{flex:1;background:var(--surface-2);font-family:ui-monospace,monospace;font-size:12.5px}
@@ -188,6 +190,45 @@ td.editcell{min-width:120px}
 .toast.show{opacity:1}
 .empty{text-align:center;padding:60px 20px;color:var(--muted)}
 .loading{text-align:center;padding:60px;color:var(--muted);font-size:14px}
+
+/* ---------- Botão de tema ---------- */
+.theme-toggle{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff;
+  width:36px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:15px;box-shadow:none}
+.theme-toggle:hover{background:rgba(255,255,255,.16);transform:none}
+
+/* ---------- MODO ESCURO ---------- */
+/* o tema é resolvido por JS (data-theme) respeitando a preferência do sistema */
+.logo-dark{display:none}
+:root[data-theme="dark"] .logo-light{display:none}
+:root[data-theme="dark"] .logo-dark{display:block}
+:root[data-theme="dark"]{
+  --bg:#15100f;
+  --surface:#211b1a;
+  --surface-2:#2a2322;
+  --ink:#f3ece8;
+  --muted:#aba19a;
+  --line:#362d2c;
+  --idle:#9a8f88;
+  --idle-soft:#352c2b;
+  --accent-soft:#2c1119;
+  color-scheme:dark;
+}
+:root[data-theme="dark"] .btn:hover{border-color:#4a3f3e}
+:root[data-theme="dark"] .st-pronto{background:#2b3444;color:#c0ccde}
+:root[data-theme="dark"] .st-andamento{background:#3a2a0c;color:#f0c178}
+:root[data-theme="dark"] .st-concluido{background:#12301f;color:#77dc9d}
+:root[data-theme="dark"] .st-pendente{background:#2f2927;color:#c9beb6}
+:root[data-theme="dark"] .st-atrasado{background:#3b1416;color:#f3a3a3}
+:root[data-theme="dark"] .st-na{background:#2a2322;color:#9fadbb}
+:root[data-theme="dark"] .al-ok{background:#12301f;color:#77dc9d}
+:root[data-theme="dark"] .al-warn{background:#3a2a0c;color:#f0c178}
+:root[data-theme="dark"] .al-late{background:#3b1416;color:#f3a3a3}
+:root[data-theme="dark"] .al-none{background:#352c2b;color:#aba19a}
+:root[data-theme="dark"] .kpi .val.ok{color:#3cc470}
+:root[data-theme="dark"] .kpi .val.run{color:#f0a73c}
+:root[data-theme="dark"] .kpi .val.late{color:#f36a6a}
+:root[data-theme="dark"] .progress .s-ok,:root[data-theme="dark"] .mini-bar>span{background:#3cc470}
+:root[data-theme="dark"] .st-pendente{border:1px solid transparent}
 
 @media(max-width:760px){
   .topbar{flex-wrap:wrap;height:auto;padding:10px 14px;gap:10px}

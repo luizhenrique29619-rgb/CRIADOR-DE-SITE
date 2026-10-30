@@ -367,6 +367,17 @@ function wireEvents(){
   $('#btnEquipe').onclick = modalEquipe;
   $('#btnShare').onclick = modalShare;
 
+  // Tema claro/escuro (lembra a escolha; padrão segue o sistema)
+  const btnTema = $('#btnTema');
+  const sincTema = ()=>{ btnTema.textContent = (document.documentElement.getAttribute('data-theme')==='dark') ? '☀' : '☾'; };
+  sincTema();
+  btnTema.onclick = ()=>{
+    const novo = document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', novo);
+    try{ localStorage.setItem('tema', novo); }catch(e){}
+    sincTema();
+  };
+
   // Delegação: abas de fase + edição de células
   $('#faseTabs').addEventListener('click', e=>{ const b=e.target.closest('.subtab'); if(b){ state.fase=+b.dataset.fase; renderChecklist(); } });
   ['busca','fSetor','fResp','fStatus'].forEach(id=>{ const el=$('#'+id); el.addEventListener('input',renderChecklist); el.addEventListener('change',renderChecklist); });

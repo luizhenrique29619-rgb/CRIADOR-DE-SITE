@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>(function(){try{var t=localStorage.getItem('tema');if(!t)t=(window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <title>Apresentação · Painel de Lançamento · Record</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,7 +22,8 @@
       <h1 id="pNome">—</h1>
       <div class="meta" id="pMeta"></div>
     </div>
-    <span class="pres-tag">Apresentação · somente leitura</span>
+    <button class="theme-toggle" id="btnTema" title="Alternar tema claro/escuro" aria-label="Alternar tema" style="margin-left:auto">☾</button>
+    <span class="pres-tag" style="margin-left:12px">Apresentação · somente leitura</span>
   </div>
 </div>
 
@@ -55,5 +57,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="js/config.js"></script>
 <script src="js/apresentacao.js"></script>
+<script>(function(){var b=document.getElementById('btnTema');if(!b)return;function s(){b.textContent=(document.documentElement.getAttribute('data-theme')==='dark')?'☀':'☾';}s();b.onclick=function(){var n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('tema',n);}catch(e){}s();};})();</script>
 </body>
 </html>

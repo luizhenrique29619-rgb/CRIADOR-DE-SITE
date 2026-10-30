@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>(function(){try{var t=localStorage.getItem('tema');if(!t)t=(window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <title>Painel de Lançamentos · Record</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,6 +25,7 @@
   <div class="usermenu">
     <div class="usermeta"><b id="uNome">—</b><br><span class="pill-role" id="uRole">—</span></div>
     <div class="avatar" id="uAvatar">–</div>
+    <button class="theme-toggle" id="btnTema" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro">☾</button>
     <button class="btn btn-sm btn-ghost" id="btnSair" style="color:#fff">Sair</button>
   </div>
 </header>
