@@ -3,25 +3,27 @@
    Design system — as cores ficam todas no :root abaixo.
    ========================================================= */
 :root{
-  --bg:#eef1f6;
+  --bg:#f4f1ee;
   --surface:#ffffff;
-  --surface-2:#f7f9fc;
-  --ink:#16202e;
+  --surface-2:#faf7f4;
+  --ink:#1a1412;
   --ink-soft:#44506234;
-  --muted:#64748b;
-  --line:#e3e8f0;
-  --brand:#0e1b2e;       /* navy profundo Record */
-  --brand-2:#17304f;
-  --accent:#c6a04e;      /* dourado */
-  --accent-soft:#f3e9d2;
+  --muted:#7a6f69;
+  --line:#e9e2db;
+  --brand:#82001e;       /* Bordô Record */
+  --brand-2:#9e0b2a;
+  --accent:#cd0041;      /* Vibra (uso pontual) */
+  --accent-soft:#f6e6ea;
+  --areia:#ebdcd2;
+  --areia-2:#f3e9e1;
   --ok:#15a34a;
   --ok-soft:#e5f6ec;
   --run:#d97706;
   --run-soft:#fdeed6;
   --late:#dc2626;
   --late-soft:#fdeaea;
-  --idle:#5b6b80;
-  --idle-soft:#eef1f6;
+  --idle:#6b6058;
+  --idle-soft:#ece6e1;
   --na:#94a3b8;
   --na-soft:#eef1f5;
   --radius:14px;
@@ -45,7 +47,8 @@ button{font-family:inherit;cursor:pointer}
 .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
 .btn-primary:hover{background:var(--brand-2);border-color:var(--brand-2)}
-.btn-accent{background:var(--accent);color:#2a2008;border-color:var(--accent)}
+.btn-accent{background:var(--areia);color:var(--brand);border-color:#e4d3c6;font-weight:700}
+.btn-accent:hover{background:var(--areia-2)}
 .btn-ghost{background:transparent;box-shadow:none;border-color:transparent}
 .btn-ghost:hover{background:var(--surface-2)}
 .btn-sm{padding:6px 11px;font-size:13px}
@@ -54,9 +57,12 @@ button{font-family:inherit;cursor:pointer}
 .topbar{position:sticky;top:0;z-index:40;background:var(--brand);color:#fff;
   display:flex;align-items:center;gap:18px;padding:0 22px;height:62px;box-shadow:0 2px 14px rgba(14,27,46,.25)}
 .brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
-.brand .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#e9cf90);
-  color:#2a2008;display:grid;place-items:center;font-weight:900;font-size:15px}
-.brand small{display:block;font-weight:500;font-size:10.5px;letter-spacing:.14em;color:#9fb1c9;text-transform:uppercase}
+.brand .mark{width:30px;height:30px;border-radius:8px;background:var(--areia);
+  color:var(--brand);display:grid;place-items:center;font-weight:900;font-size:15px}
+.brand-logo{height:28px;width:auto;display:block}
+.brand .divider{width:1px;height:26px;background:rgba(235,220,210,.3)}
+.brand .tagline{font-size:11px;font-weight:600;letter-spacing:.1em;color:#edd7ca;text-transform:uppercase;white-space:nowrap}
+.brand small{display:block;font-weight:500;font-size:10.5px;letter-spacing:.14em;color:#edd7ca;text-transform:uppercase}
 .topbar .sel{margin-left:6px}
 .topbar .spacer{flex:1}
 .selbox{appearance:none;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.18);
@@ -65,13 +71,13 @@ button{font-family:inherit;cursor:pointer}
   background-repeat:no-repeat;background-position:right 12px center}
 .selbox option{color:#16202e}
 .usermenu{display:flex;align-items:center;gap:10px}
-.avatar{width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:#7a5f1d;
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--areia);color:var(--brand);
   display:grid;place-items:center;font-weight:800;font-size:14px}
 .usermeta{line-height:1.15;text-align:right}
 .usermeta b{font-size:13px}
-.usermeta span{font-size:11px;color:#9fb1c9}
+.usermeta span{font-size:11px;color:#edd7ca}
 .pill-role{font-size:10px;text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:20px;
-  background:rgba(198,160,78,.22);color:#f0dca8;font-weight:700}
+  background:rgba(235,220,210,.2);color:#f1ddd0;font-weight:700}
 
 /* ---------- Layout ---------- */
 .wrap{max-width:1280px;margin:0 auto;padding:22px}
@@ -87,7 +93,7 @@ button{font-family:inherit;cursor:pointer}
 .kpi .val{font-size:30px;font-weight:800;margin-top:6px;letter-spacing:-.02em}
 .kpi .sub{font-size:12px;color:var(--muted);margin-top:2px}
 .kpi.accent{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;border:none}
-.kpi.accent .lbl{color:#9fb1c9}.kpi.accent .sub{color:#9fb1c9}
+.kpi.accent .lbl{color:#edc9bb}.kpi.accent .sub{color:#edc9bb}
 .kpi .val.ok{color:var(--ok)}.kpi .val.run{color:var(--run)}.kpi .val.late{color:var(--late)}
 
 /* ---------- Painel: barra de progresso ---------- */
@@ -121,7 +127,7 @@ tbody tr:hover{background:var(--surface-2)}
 .toolbar input[type=search]{min-width:220px}
 .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .subtab{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:30px;font-size:13px;font-weight:600;color:var(--muted)}
-.subtab.active{background:var(--accent-soft);border-color:var(--accent);color:#7a5f1d}
+.subtab.active{background:var(--areia);border-color:var(--brand);color:var(--brand)}
 .subtab b{font-weight:800}
 
 /* status select / badges */
@@ -158,7 +164,7 @@ td.editcell{min-width:120px}
 
 /* ---------- Login / Apresentação ---------- */
 .auth-screen{min-height:100vh;display:grid;place-items:center;padding:20px;
-  background:radial-gradient(1200px 600px at 70% -10%,rgba(198,160,78,.14),transparent),var(--brand)}
+  background:radial-gradient(1200px 600px at 70% -10%,rgba(205,0,65,.18),transparent),var(--brand)}
 .auth-card{background:var(--surface);border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.35);width:100%;max-width:400px;padding:34px 30px}
 .auth-card .brand{color:var(--brand);justify-content:center;margin-bottom:6px}
 .auth-card h1{font-size:20px;text-align:center}
@@ -175,8 +181,8 @@ td.editcell{min-width:120px}
 .pres-header{background:var(--brand);color:#fff;padding:30px 22px}
 .pres-header .wrap{padding:0;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .pres-header h1{font-size:24px}
-.pres-header .meta{color:#9fb1c9;font-size:13.5px;margin-top:4px}
-.pres-tag{margin-left:auto;background:rgba(198,160,78,.2);color:#f0dca8;padding:6px 14px;border-radius:30px;font-size:12px;font-weight:700}
+.pres-header .meta{color:#edc9bb;font-size:13.5px;margin-top:4px}
+.pres-tag{margin-left:auto;background:rgba(235,220,210,.18);color:#f1ddd0;padding:6px 14px;border-radius:30px;font-size:12px;font-weight:700}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--brand);color:#fff;
   padding:11px 20px;border-radius:30px;font-size:13.5px;font-weight:600;box-shadow:var(--shadow);z-index:80;opacity:0;transition:.25s;pointer-events:none}
 .toast.show{opacity:1}
